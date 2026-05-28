@@ -3,7 +3,7 @@ const GITHUB_CONFIG = {
     username: "ParagiMaca",              // Username GitHub Anda
     repo: "vokep",                       // Nama repositori Anda
     path: "video_data.json",            // Nama berkas database JSON
-    token: "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" // Token GitHub aktif Anda
+    token: "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" // Token GitHub aktif Anda
 };
 
 let databaseRecords = [];
