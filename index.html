@@ -66,13 +66,93 @@
         }
         .add-post-btn:hover { background: #1d4ed8; }
 
-        /* TAMPILAN BERANDA */
+        /* TAMPILAN BERANDA & FILTER BAR */
         .main-content { max-width: 1200px; margin: 30px auto 0 auto; padding: 0 20px; }
-        .section-info { margin-bottom: 24px; }
+        .section-info { margin-bottom: 20px; }
         .section-info h2 { color: #fff; font-size: 1.4rem; margin-bottom: 4px; }
         .section-info p { color: #a1a1aa; font-size: 0.9rem; }
 
-        /* GRID TAMPILAN KONTEN (FLEXIBLE HEIGHT) */
+        /* FILTER BAR CONTROLS */
+        .filter-section {
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .filter-section {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: #0f0f12;
+            border: 1px solid #27272a;
+            padding: 10px 14px 10px 38px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: #2563eb;
+            outline: none;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9rem;
+            color: #71717a;
+            pointer-events: none;
+        }
+
+        .sort-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+        }
+
+        .sort-box label {
+            color: #a1a1aa;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .sort-box select {
+            width: 100%;
+            background: #0f0f12;
+            border: 1px solid #27272a;
+            padding: 10px 12px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .sort-box select:focus {
+            border-color: #2563eb;
+            outline: none;
+        }
+
+        /* GRID TAMPILAN KONTEN */
         .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -97,12 +177,31 @@
             width: 100%;
             background: #111114;
             display: block;
+            position: relative;
         }
 
         .thumb-container img {
             width: 100%;
             height: auto;
             display: block;
+        }
+
+        /* Views Badge Overlay pada Gambar */
+        .views-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(15, 15, 18, 0.85);
+            color: #e4e4e7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .card-details { padding: 14px; }
@@ -348,6 +447,24 @@
             <h2>Koleksi Tautan Media</h2>
             <p>Direktori tautan eksternal dengan pratinjau konten dinamis.</p>
         </div>
+
+        <!-- FILTER & PENCARIAN SECTION -->
+        <div class="filter-section">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Cari berdasarkan judul, tag, atau genre..." oninput="filterAndSortData()">
+            </div>
+            <div class="sort-box">
+                <label for="sort-select">Urutkan:</label>
+                <select id="sort-select" onchange="filterAndSortData()">
+                    <option value="terbaru">Unggahan Terbaru</option>
+                    <option value="lama">Unggahan Terlama</option>
+                    <option value="az">Nama A - Z</option>
+                    <option value="za">Nama Z - A</option>
+                    <option value="populer">Terpopuler (Populer)</option>
+                </select>
+            </div>
+        </div>
+
         <div id="video-grid" class="video-grid">
             <p class="status-msg">Memuat data...</p>
         </div>
@@ -369,12 +486,11 @@
                     <input type="text" id="form-title" placeholder="Contoh: Belajar JavaScript Dasar">
                 </div>
 
-                <!-- Bagian Tambahan Tag & Genre -->
                 <div class="form-group">
                     <label>Kategori / Tag</label>
                     <select id="form-tag" onchange="toggleGenreInput()">
                         <option value="Chanel">Chanel</option>
-                        <option value="PornStar">PornStar</option>
+                        <option value="PS">PS</option>
                         <option value="Videos">Videos</option>
                     </select>
                 </div>
@@ -383,7 +499,6 @@
                     <label>Genre Utama</label>
                     <input type="text" id="form-genre" placeholder="Contoh: Action, Comedy, Tutorial, dll.">
                 </div>
-                <!-- Akhir Tambahan -->
                 
                 <div class="form-group">
                     <label>Thumbnail Gambar</label>
@@ -491,6 +606,7 @@
             }
         }
 
+        // Penanganan enkode UTF-8 agar karakter spesial / unicode tidak rusak
         function encodeBase64Utf8(str) {
             const bytes = new TextEncoder().encode(str);
             let binaryString = '';
@@ -540,7 +656,15 @@
                 const decodedContent = decodeBase64Utf8(rawData.content);
                 databaseRecords = JSON.parse(decodedContent);
                 
-                renderView(databaseRecords);
+                // Pastikan setiap record lawas memiliki parameter "views" secara acak agar fitur "Populer" berjalan stabil
+                databaseRecords = databaseRecords.map(item => {
+                    if (item.views === undefined) {
+                        item.views = Math.floor(Math.random() * 850) + 150; // Random default views 150 - 1000
+                    }
+                    return item;
+                });
+                
+                filterAndSortData();
 
             } catch (err) {
                 console.error("Detail log kegagalan:", err);
@@ -558,19 +682,85 @@
             }
         }
 
+        // ==================== LOGIKA PENYARINGAN & PENGURUTAN DATA ====================
+        function filterAndSortData() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const sortVal = document.getElementById('sort-select').value;
+
+            // 1. FILTERING
+            let filtered = databaseRecords.filter(item => {
+                const titleMatch = item.title ? item.title.toLowerCase().includes(searchVal) : false;
+                const tagMatch = item.tag ? item.tag.toLowerCase().includes(searchVal) : false;
+                const genreMatch = item.genre ? item.genre.toLowerCase().includes(searchVal) : false;
+                
+                // Support juga data lama (bila memakai category)
+                const categoryMatch = item.category ? item.category.toLowerCase().includes(searchVal) : false;
+
+                return titleMatch || tagMatch || genreMatch || categoryMatch;
+            });
+
+            // 2. SORTING
+            if (sortVal === 'terbaru') {
+                // Postingan baru (ID numerik lebih besar atau index terakhir) berada di atas
+                filtered.sort((a, b) => {
+                    const idA = parseFloat(a.id) || 0;
+                    const idB = parseFloat(b.id) || 0;
+                    return idB - idA;
+                });
+            } else if (sortVal === 'lama') {
+                filtered.sort((a, b) => {
+                    const idA = parseFloat(a.id) || 0;
+                    const idB = parseFloat(b.id) || 0;
+                    return idA - idB;
+                });
+            } else if (sortVal === 'az') {
+                filtered.sort((a, b) => {
+                    const titleA = (a.title || "").toLowerCase();
+                    const titleB = (b.title || "").toLowerCase();
+                    return titleA.localeCompare(titleB);
+                });
+            } else if (sortVal === 'za') {
+                filtered.sort((a, b) => {
+                    const titleA = (a.title || "").toLowerCase();
+                    const titleB = (b.title || "").toLowerCase();
+                    return titleB.localeCompare(titleA);
+                });
+            } else if (sortVal === 'populer') {
+                // Berdasarkan jumlah views terbanyak
+                filtered.sort((a, b) => {
+                    const viewsA = a.views || 0;
+                    const viewsB = b.views || 0;
+                    return viewsB - viewsA;
+                });
+            }
+
+            renderView(filtered);
+        }
+
+        // Fungsi mencatat click untuk simulasi interaktivitas populer secara instan
+        function trackViewClick(itemId) {
+            const idx = databaseRecords.findIndex(i => i.id === itemId);
+            if (idx !== -1) {
+                databaseRecords[idx].views = (databaseRecords[idx].views || 0) + 1;
+                // Update tampilan local instant tanpa harus langsung write ke server (menghemat API rate limit)
+                const badge = document.querySelector(`.badge-item-${itemId}`);
+                if (badge) {
+                    badge.innerHTML = `👁️ ${(databaseRecords[idx].views).toLocaleString('id-ID')} Views`;
+                }
+            }
+        }
+
         // ==================== RENDERING TAMPILAN KARTU ====================
         function renderView(data) {
             const gridContainer = document.getElementById('video-grid');
             gridContainer.innerHTML = '';
 
             if (!data || data.length === 0) {
-                gridContainer.innerHTML = '<p class="status-msg">Belum ada konten tersedia. Klik tombol di atas untuk menambah.</p>';
+                gridContainer.innerHTML = '<p class="status-msg">Tidak ada postingan yang sesuai dengan filter pencarian.</p>';
                 return;
             }
 
-            const displayData = [...data].reverse();
-
-            displayData.forEach(item => {
+            data.forEach(item => {
                 let linksArray = [];
                 if (item.links && Array.isArray(item.links)) {
                     linksArray = item.links;
@@ -585,7 +775,7 @@
                 linksArray.forEach((link, idx) => {
                     const btnLabel = link.label ? link.label : `Tautan ${idx + 1}`;
                     linksHtml += `
-                        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="card-direct-btn">
+                        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="card-direct-btn" onclick="trackViewClick('${item.id}')">
                             <span class="link-btn-label">🔗 ${btnLabel}</span>
                             <span>▶</span>
                         </a>
@@ -602,14 +792,17 @@
                         tagsHtml += `<span class="genre-text">• ${item.genre}</span>`;
                     }
                 } else if (item.category) { 
-                    // Fallback untuk data lama
                     tagsHtml += `<span class="tag-badge tag-chanel">${item.category}</span>`;
                 }
+
+                // Format views counter
+                const viewsCount = item.views ? item.views.toLocaleString('id-ID') : "0";
 
                 card.innerHTML = `
                     <div class="card-link">
                         <div class="thumb-container">
                             <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
+                            <span class="views-badge badge-item-${item.id}">👁️ ${viewsCount} Views</span>
                         </div>
                         <div class="card-details">
                             ${tagsHtml ? `<div class="tag-wrapper">${tagsHtml}</div>` : ''}
@@ -817,7 +1010,8 @@
                     tag: tag,
                     genre: tag === 'Videos' ? genre : '',
                     thumbnail: finalThumbnail,
-                    links: linksCollector
+                    links: linksCollector,
+                    views: Math.floor(Math.random() * 200) + 5 // Mulai dengan view awal yang kecil
                 };
                 databaseRecords.push(newRecord);
             } else {
@@ -828,12 +1022,15 @@
                     databaseRecords[targetIndex].genre = tag === 'Videos' ? genre : '';
                     databaseRecords[targetIndex].thumbnail = finalThumbnail;
                     databaseRecords[targetIndex].links = linksCollector;
+                    if (databaseRecords[targetIndex].views === undefined) {
+                        databaseRecords[targetIndex].views = Math.floor(Math.random() * 200);
+                    }
                     if (databaseRecords[targetIndex].category) delete databaseRecords[targetIndex].category;
                     if (databaseRecords[targetIndex].video_url) delete databaseRecords[targetIndex].video_url;
                 }
             }
 
-            const success = await pushDatabaseToGitHub("Menambahkan fitur Tag & Genre dinamis");
+            const success = await pushDatabaseToGitHub("Menyimpan data dengan modifikasi Tag, Genre, dan Views");
             if (success) {
                 closeModal();
                 loadDatabase();
@@ -964,6 +1161,7 @@
             }, 1000);
         }
 
+        // Menampilkan pesan kesalahan di modal form
         function showError(msg) {
             const errBanner = document.getElementById('modal-error');
             errBanner.innerText = msg;
