@@ -106,6 +106,19 @@
         }
 
         .card-details { padding: 14px; }
+        
+        /* Gaya untuk Tag & Genre di Kartu */
+        .tag-wrapper { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .tag-badge {
+            background: #374151; color: #d1d5db; padding: 3px 10px; 
+            border-radius: 12px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px;
+        }
+        .tag-badge.tag-videos { background: #991b1b; color: #fca5a5; }
+        .tag-badge.tag-chanel { background: #1e3a8a; color: #bfdbfe; }
+        .tag-badge.tag-ps { background: #065f46; color: #a7f3d0; }
+        
+        .genre-text { font-size: 0.75rem; color: #9ca3af; }
+
         .card-title {
             font-size: 0.95rem;
             font-weight: 600;
@@ -203,11 +216,13 @@
         .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; color: #a1a1aa; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500; }
-        .form-group input {
+        
+        .form-group input, .form-group select {
             width: 100%; background: #0f0f12; border: 1px solid #27272a;
             padding: 10px; border-radius: 6px; color: #fff; font-size: 0.9rem;
         }
-        .form-group input:focus { border-color: #2563eb; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: #2563eb; outline: none; }
+        
         .form-group small { color: #71717a; font-size: 0.75rem; margin-top: 4px; display: block; }
 
         /* Desain Pilihan Tab untuk Thumbnail */
@@ -338,7 +353,7 @@
         </div>
     </main>
 
-    <!-- Modal Form Postingan Terpadu (Diperbarui dengan elemen yang hilang) -->
+    <!-- Modal Form Postingan Terpadu -->
     <div id="post-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
@@ -353,6 +368,22 @@
                     <label>Judul</label>
                     <input type="text" id="form-title" placeholder="Contoh: Belajar JavaScript Dasar">
                 </div>
+
+                <!-- Bagian Tambahan Tag & Genre -->
+                <div class="form-group">
+                    <label>Kategori / Tag</label>
+                    <select id="form-tag" onchange="toggleGenreInput()">
+                        <option value="Chanel">Chanel</option>
+                        <option value="PornStar">PornStar</option>
+                        <option value="Videos">Videos</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="genre-container" style="display: none;">
+                    <label>Genre Utama</label>
+                    <input type="text" id="form-genre" placeholder="Contoh: Action, Comedy, Tutorial, dll.">
+                </div>
+                <!-- Akhir Tambahan -->
                 
                 <div class="form-group">
                     <label>Thumbnail Gambar</label>
@@ -378,7 +409,7 @@
                 <div class="form-group">
                     <label>URL Tautan Tujuan (Bisa Lebih dari 1)</label>
                     <div id="links-container" class="links-dynamic-list">
-                        <!-- Link inputs akan disuntikkan kesini melalui JS -->
+                        <!-- Link inputs disuntikkan kesini melalui JS -->
                     </div>
                     <button type="button" class="add-link-field-btn" onclick="addLinkField('', '')">➕ Tambah Tautan Lain</button>
                 </div>
@@ -469,7 +500,7 @@
             return btoa(binaryString);
         }
 
-        // ==================== BACA DATA DARI CLOUD (PERBAIKAN CORS/FETCH) ====================
+        // ==================== BACA DATA DARI CLOUD ====================
         async function loadDatabase() {
             const gridContainer = document.getElementById('video-grid');
             const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
@@ -481,7 +512,6 @@
             }
 
             try {
-                // Perbaikan: Mengganti Cache-Control dengan cache: 'no-store' agar tidak memicu error CORS 
                 const response = await fetch(url, { 
                     method: 'GET',
                     headers: headers,
@@ -562,12 +592,27 @@
                     `;
                 });
 
+                // Rendering Tag & Genre
+                let tagsHtml = '';
+                if (item.tag) {
+                    const tagClass = 'tag-' + item.tag.toLowerCase();
+                    tagsHtml += `<span class="tag-badge ${tagClass}">${item.tag}</span>`;
+                    
+                    if (item.tag === 'Videos' && item.genre) {
+                        tagsHtml += `<span class="genre-text">• ${item.genre}</span>`;
+                    }
+                } else if (item.category) { 
+                    // Fallback untuk data lama
+                    tagsHtml += `<span class="tag-badge tag-chanel">${item.category}</span>`;
+                }
+
                 card.innerHTML = `
                     <div class="card-link">
                         <div class="thumb-container">
                             <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
                         </div>
                         <div class="card-details">
+                            ${tagsHtml ? `<div class="tag-wrapper">${tagsHtml}</div>` : ''}
                             <h3 class="card-title">${item.title}</h3>
                             <div class="multi-links-wrapper">
                                 ${linksHtml || '<p style="font-size: 0.75rem; color: #71717a">Tidak ada tautan terpasang.</p>'}
@@ -629,6 +674,18 @@
             document.getElementById('form-thumbnail-final').value = "";
         }
 
+        // ==================== LOGIKA TAG & GENRE DINAMIS ====================
+        function toggleGenreInput() {
+            const tagVal = document.getElementById('form-tag').value;
+            const genreContainer = document.getElementById('genre-container');
+            if (tagVal === 'Videos') {
+                genreContainer.style.display = 'block';
+            } else {
+                genreContainer.style.display = 'none';
+                document.getElementById('form-genre').value = '';
+            }
+        }
+
         // ==================== MULTI-LINK DYNAMIC FIELD CONTROLLER ====================
         function addLinkField(label = '', url = '') {
             const container = document.getElementById('links-container');
@@ -670,9 +727,13 @@
                 document.getElementById('form-thumbnail-url').value = '';
                 document.getElementById('form-thumbnail-final').value = '';
                 document.getElementById('form-title').value = '';
+                document.getElementById('form-tag').value = 'Chanel';
+                document.getElementById('form-genre').value = '';
+                
                 document.getElementById('delete-btn').style.display = 'none';
                 switchThumbInput('url');
                 addLinkField('Tonton Video', '');
+                toggleGenreInput();
             } else {
                 document.getElementById('modal-title').innerText = 'Sunting / Edit Postingan';
                 document.getElementById('delete-btn').style.display = 'block';
@@ -681,6 +742,11 @@
                 if (matchItem) {
                     document.getElementById('form-post-id').value = matchItem.id;
                     document.getElementById('form-title').value = matchItem.title;
+                    
+                    document.getElementById('form-tag').value = matchItem.tag || 'Chanel';
+                    document.getElementById('form-genre').value = matchItem.genre || '';
+                    toggleGenreInput();
+
                     const thumbSrc = matchItem.thumbnail || '';
                     document.getElementById('form-thumbnail-final').value = thumbSrc;
                     
@@ -713,6 +779,8 @@
         async function savePostSubmit() {
             const title = document.getElementById('form-title').value.trim();
             const id = document.getElementById('form-post-id').value;
+            const tag = document.getElementById('form-tag').value;
+            const genre = document.getElementById('form-genre').value.trim();
             const saveBtn = document.getElementById('save-btn');
             
             let finalThumbnail = '';
@@ -737,6 +805,7 @@
             if (!title) { showError('Judul postingan wajib diisi!'); return; }
             if (!finalThumbnail) { showError('Harap masukkan URL gambar atau unggah gambar untuk thumbnail!'); return; }
             if (linksCollector.length === 0) { showError('Harap masukkan minimal 1 alamat URL tautan tujuan!'); return; }
+            if (tag === 'Videos' && !genre) { showError('Harap isi Genre Utama untuk kategori Videos!'); return; }
 
             saveBtn.disabled = true;
             saveBtn.innerText = 'Menyimpan...';
@@ -745,6 +814,8 @@
                 const newRecord = {
                     id: new Date().getTime().toString(), 
                     title: title,
+                    tag: tag,
+                    genre: tag === 'Videos' ? genre : '',
                     thumbnail: finalThumbnail,
                     links: linksCollector
                 };
@@ -753,15 +824,16 @@
                 const targetIndex = databaseRecords.findIndex(i => i.id === id);
                 if (targetIndex !== -1) {
                     databaseRecords[targetIndex].title = title;
+                    databaseRecords[targetIndex].tag = tag;
+                    databaseRecords[targetIndex].genre = tag === 'Videos' ? genre : '';
                     databaseRecords[targetIndex].thumbnail = finalThumbnail;
                     databaseRecords[targetIndex].links = linksCollector;
-                    if (databaseRecords[targetIndex].video_url) {
-                        delete databaseRecords[targetIndex].video_url;
-                    }
+                    if (databaseRecords[targetIndex].category) delete databaseRecords[targetIndex].category;
+                    if (databaseRecords[targetIndex].video_url) delete databaseRecords[targetIndex].video_url;
                 }
             }
 
-            const success = await pushDatabaseToGitHub("Pembaruan direktori video");
+            const success = await pushDatabaseToGitHub("Menambahkan fitur Tag & Genre dinamis");
             if (success) {
                 closeModal();
                 loadDatabase();
@@ -800,8 +872,6 @@
 
             const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
             
-            // PERBAIKAN: Mengambil info file (SHA) terbaru tepat sebelum melakukan perubahan.
-            // Langkah ini mencegah terjadinya error "sha wasn't supplied" karena file lokal belum termutakhir.
             let latestSha = currentFileSha;
             try {
                 const checkResp = await fetch(url, {
@@ -829,7 +899,6 @@
                 content: encodedContent
             };
 
-            // Masukkan SHA yang baru dipastikan
             if (latestSha) {
                 bodyPayload.sha = latestSha;
             }
@@ -851,7 +920,6 @@
                     throw new Error(responseData.message || "Gagal melakukan commit.");
                 }
 
-                // Setelah berhasil PUT, update SHA dengan SHA file versi terbaru dari respons API
                 if (responseData.content && responseData.content.sha) {
                     currentFileSha = responseData.content.sha;
                 }
@@ -904,4 +972,3 @@
     </script>
 </body>
 </html>
-
