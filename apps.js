@@ -25,27 +25,40 @@ async function loadDatabase() {
             headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` }
         });
 
+        // PERBAIKAN: Jika file json belum ada di repo baru, jangan lempar error.
+        // Langsung buat array kosong agar tombol ➕ bisa mendikte pembuatan file baru nanti.
         if (response.status === 404) {
-            // Jika file json belum terbentuk di repositori baru, inisialisasi dengan array kosong
             databaseRecords = [];
             currentFileSha = null;
             renderView(databaseRecords);
             return;
         }
 
+        // Jika ada kendala hak akses token salah/invalid
+        if (response.status === 401) {
+            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Kunci Akses (Token GitHub) Tidak Sah atau salah.</p>`;
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Respons server bermasalah: ${response.status}`);
+        }
+
         const rawData = await response.json();
         currentFileSha = rawData.sha;
-        // Decode base64 konten dari GitHub
+        
+        // Decode base64 konten dari GitHub secara aman
         const decodedContent = decodeURIComponent(escape(atob(rawData.content)));
         databaseRecords = JSON.parse(decodedContent);
         
         renderView(databaseRecords);
 
     } catch (err) {
-        console.error(err);
-        gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">Gagal tersambung ke database cloud GitHub.</p>`;
+        console.error("Detail log kegagalan:", err);
+        gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">Gagal memuat katalog: ${err.message}</p>`;
     }
 }
+
 
 function renderView(data) {
     const gridContainer = document.getElementById('video-grid');
