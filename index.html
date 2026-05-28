@@ -4,7 +4,318 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Hub - Dashboard Direktori</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* RESET & VARIABEL DASAR */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #0f0f12;
+            color: #e4e4e7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding-bottom: 50px;
+        }
+
+        /* HEADER STYLING */
+        .main-header {
+            background: #18181c;
+            border-bottom: 1px solid #27272a;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo { font-size: 1.3rem; color: #fff; font-weight: 700; cursor: pointer; }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .settings-btn {
+            background: #27272a;
+            color: #d4d4d8;
+            border: 1px solid #3f3f46;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .settings-btn:hover { background: #3f3f46; color: #fff; }
+
+        .add-post-btn {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .add-post-btn:hover { background: #1d4ed8; }
+
+        /* TAMPILAN BERANDA */
+        .main-content { max-width: 1200px; margin: 30px auto 0 auto; padding: 0 20px; }
+        .section-info { margin-bottom: 24px; }
+        .section-info h2 { color: #fff; font-size: 1.4rem; margin-bottom: 4px; }
+        .section-info p { color: #a1a1aa; font-size: 0.9rem; }
+
+        /* GRID TAMPILAN KONTEN (FLEXIBLE HEIGHT) */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* KARTU POSTINGAN */
+        .content-card {
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-link { text-decoration: none; color: inherit; display: block; }
+
+        .thumb-container {
+            width: 100%;
+            background: #111114;
+            display: block;
+        }
+
+        .thumb-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .card-details { padding: 14px; }
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e4e4e7;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        /* Navigasi Link Lebih dari Satu */
+        .multi-links-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #27272a;
+        }
+
+        .card-direct-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #202024;
+            color: #93c5fd;
+            border: 1px solid #1e3a8a;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .card-direct-btn:hover {
+            background: #1e40af;
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+
+        .link-btn-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 80%;
+        }
+
+        /* Tombol Sunting di bawah kartu */
+        .edit-action-bar {
+            border-top: 1px solid #27272a;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: flex-end;
+            background: #141417;
+        }
+
+        .edit-trigger-btn {
+            background: #27272a;
+            color: #d4d4d8;
+            border: 1px solid #3f3f46;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .edit-trigger-btn:hover { background: #3f3f46; color: #fff; }
+
+        /* SYSTEM DIALOG / MODAL FORM CSS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 200;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .modal-card {
+            background: #18181c;
+            border: 1px solid #27272a;
+            width: 100%; max-width: 520px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: auto;
+        }
+
+        .modal-header {
+            padding: 16px; border-bottom: 1px solid #27272a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { font-size: 1.1rem; color: #fff; }
+        .close-modal-btn { background: transparent; border: none; color: #a1a1aa; font-size: 1.1rem; cursor: pointer; }
+
+        .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; color: #a1a1aa; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500; }
+        .form-group input {
+            width: 100%; background: #0f0f12; border: 1px solid #27272a;
+            padding: 10px; border-radius: 6px; color: #fff; font-size: 0.9rem;
+        }
+        .form-group input:focus { border-color: #2563eb; outline: none; }
+        .form-group small { color: #71717a; font-size: 0.75rem; margin-top: 4px; display: block; }
+
+        /* Desain Pilihan Tab untuk Thumbnail */
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid #27272a;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .tab-link {
+            background: transparent;
+            border: none;
+            color: #71717a;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-link.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .clear-file-btn {
+            background: #3f3f46;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        /* Tata Letak Input Tautan Dinamis */
+        .links-dynamic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .link-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #141417;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #27272a;
+        }
+
+        .link-input-row input {
+            padding: 8px;
+            font-size: 0.85rem;
+        }
+
+        .remove-link-field-btn {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border: 1px solid #991b1b;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .remove-link-field-btn:hover {
+            background: #b91c1c;
+            color: #fff;
+        }
+
+        .add-link-field-btn {
+            width: 100%;
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px dashed #38bdf8;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .add-link-field-btn:hover {
+            background: #38bdf8;
+            color: #0f172a;
+        }
+
+        /* MODAL FOOTER */
+        .modal-footer {
+            padding: 14px 20px; background: #141417; border-top: 1px solid #27272a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .footer-right-actions { display: flex; gap: 8px; }
+
+        .submit-btn { background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .cancel-btn { background: #27272a; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+        .danger-btn { background: #dc2626; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+        .danger-btn:hover { background: #b91c1c; }
+
+        .status-msg { color: #a1a1aa; font-size: 0.9rem; text-align: center; width: 100%; padding: 40px 0; }
+        .error-banner { background: rgba(220, 38, 38, 0.2); color: #fca5a5; border: 1px solid #dc2626; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 10px; }
+    </style>
 </head>
 <body>
     <header class="main-header">
@@ -20,38 +331,67 @@
     <main class="main-content">
         <div class="section-info">
             <h2>Koleksi Tautan Media</h2>
+            <p>Direktori tautan eksternal dengan pratinjau konten dinamis.</p>
         </div>
         <div id="video-grid" class="video-grid">
             <p class="status-msg">Memuat data...</p>
         </div>
     </main>
 
-    <!-- Modal Form -->
+    <!-- Modal Form Postingan Terpadu (Diperbarui dengan elemen yang hilang) -->
     <div id="post-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="modal-title">Tambah Postingan</h3>
+                <h3 id="modal-title">Tambah Postingan Baru</h3>
                 <button class="close-modal-btn" onclick="closeModal()">✕</button>
             </div>
+            
             <div class="modal-body">
                 <input type="hidden" id="form-post-id">
+                
                 <div class="form-group">
                     <label>Judul</label>
-                    <input type="text" id="form-title">
+                    <input type="text" id="form-title" placeholder="Contoh: Belajar JavaScript Dasar">
                 </div>
+                
                 <div class="form-group">
-                    <label>Thumbnail URL</label>
-                    <input type="url" id="form-thumbnail">
+                    <label>Thumbnail Gambar</label>
+                    <div class="tab-header">
+                        <button class="tab-link active" id="tab-btn-url" onclick="switchThumbInput('url')">Salin URL Gambar</button>
+                        <button class="tab-link" id="tab-btn-file" onclick="switchThumbInput('file')">Unggah dari HP</button>
+                    </div>
+                    
+                    <div id="thumb-url-container">
+                        <input type="url" id="form-thumbnail-url" placeholder="https://contoh-gambar.com/gambar.jpg">
+                    </div>
+                    
+                    <div id="thumb-file-container" style="display: none;">
+                        <input type="file" id="form-thumbnail-file" accept="image/*" onchange="handleLocalFileSelect(event)">
+                        <div id="file-preview-container" style="display: none; margin-top: 10px;">
+                            <img id="file-preview-img" style="width: 100%; max-height: 200px; object-fit: contain; background: #000; border-radius: 6px;">
+                            <button type="button" class="clear-file-btn" onclick="clearSelectedFile()">Hapus Gambar</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="form-thumbnail-final">
                 </div>
+
                 <div class="form-group">
-                    <label>URL Tautan</label>
-                    <input type="url" id="form-url">
+                    <label>URL Tautan Tujuan (Bisa Lebih dari 1)</label>
+                    <div id="links-container" class="links-dynamic-list">
+                        <!-- Link inputs akan disuntikkan kesini melalui JS -->
+                    </div>
+                    <button type="button" class="add-link-field-btn" onclick="addLinkField('', '')">➕ Tambah Tautan Lain</button>
                 </div>
+                
                 <div id="modal-error" class="error-banner" style="display: none;"></div>
             </div>
+            
             <div class="modal-footer">
-                <button class="cancel-btn" onclick="closeModal()">Batal</button>
-                <button class="submit-btn" onclick="savePostSubmit()">Simpan</button>
+                <button class="danger-btn" id="delete-btn" style="display: none;" onclick="deletePost()">🗑️ Hapus</button>
+                <div class="footer-right-actions">
+                    <button class="cancel-btn" onclick="closeModal()">Batal</button>
+                    <button class="submit-btn" id="save-btn" onclick="savePostSubmit()">Simpan</button>
+                </div>
             </div>
         </div>
     </div>
@@ -68,12 +408,500 @@
                     <label>Token GitHub (ghp_...)</label>
                     <input type="password" id="admin-token-input" placeholder="Masukkan token Anda...">
                 </div>
+                <p id="token-modal-msg" style="font-size: 0.85rem; font-weight: 500;"></p>
             </div>
             <div class="modal-footer">
                 <button class="submit-btn" onclick="saveAdminToken()">Simpan Kunci</button>
             </div>
         </div>
     </div>
-    <script src="apps.js"></script>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        const GITHUB_CONFIG = {
+            username: "ParagiMaca",              // Username GitHub Anda
+            repo: "vokep",                       // Nama repositori Anda
+            path: "video_data.json"              // Nama berkas database JSON
+        };
+
+        let databaseRecords = [];
+        let currentFileSha = null;
+        let currentModalMode = 'create'; 
+        let selectedThumbnailType = 'url'; 
+
+        // Mengambil Token dari browser lokal HP Anda secara mandiri
+        function getAuthToken() {
+            return localStorage.getItem('vokep_github_token') || "";
+        }
+
+        // Jalankan sistem saat halaman selesai dimuat sepenuhnya
+        window.onload = function() {
+            if (!getAuthToken()) {
+                console.warn("Sistem berjalan dalam mode baca. Atur kunci admin di menu pengaturan.");
+            }
+            loadDatabase();
+        };
+
+        // ==================== HELPER DEKODE & ENKODE ====================
+        function decodeBase64Utf8(base64Str) {
+            try {
+                const cleanedBase64 = base64Str.replace(/\s/g, '');
+                const binaryString = atob(cleanedBase64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (err) {
+                console.error("Gagal mendecode konten, format base64 mungkin rusak", err);
+                return "[]"; 
+            }
+        }
+
+        function encodeBase64Utf8(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binaryString = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binaryString += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binaryString);
+        }
+
+        // ==================== BACA DATA DARI CLOUD (PERBAIKAN CORS/FETCH) ====================
+        async function loadDatabase() {
+            const gridContainer = document.getElementById('video-grid');
+            const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+
+            const token = getAuthToken();
+            const headers = { 'Accept': 'application/vnd.github.v3+json' };
+            if (token) {
+                headers['Authorization'] = `token ${token}`;
+            }
+
+            try {
+                // Perbaikan: Mengganti Cache-Control dengan cache: 'no-store' agar tidak memicu error CORS 
+                const response = await fetch(url, { 
+                    method: 'GET',
+                    headers: headers,
+                    cache: 'no-store'
+                });
+
+                if (response.status === 404) {
+                    databaseRecords = [];
+                    currentFileSha = null;
+                    renderView(databaseRecords);
+                    return;
+                }
+
+                if (response.status === 401 || response.status === 403) {
+                    gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Akses Ditolak (Status: ${response.status}). Token Salah/Kedaluwarsa atau terkena batasan publik.</p>`;
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Respons server gagal dengan status: ${response.status}`);
+                }
+
+                const rawData = await response.json();
+                currentFileSha = rawData.sha;
+                
+                const decodedContent = decodeBase64Utf8(rawData.content);
+                databaseRecords = JSON.parse(decodedContent);
+                
+                renderView(databaseRecords);
+
+            } catch (err) {
+                console.error("Detail log kegagalan:", err);
+                if (err.message.includes("Failed to fetch")) {
+                    gridContainer.innerHTML = `
+                        <div class="status-msg" style="color: #fbbf24;">
+                            <p>⚠️ Gagal terhubung ke GitHub (Failed to fetch).</p>
+                            <p style="font-size: 0.8rem; margin-top: 10px; color: #a1a1aa;">
+                                Kemungkinan token Anda tertulis salah sehingga diblokir browser (CORS). Silakan periksa kembali di tombol <strong>⚙️ Atur Kunci</strong>.
+                            </p>
+                        </div>`;
+                } else {
+                    gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">Gagal memuat katalog: ${err.message}</p>`;
+                }
+            }
+        }
+
+        // ==================== RENDERING TAMPILAN KARTU ====================
+        function renderView(data) {
+            const gridContainer = document.getElementById('video-grid');
+            gridContainer.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                gridContainer.innerHTML = '<p class="status-msg">Belum ada konten tersedia. Klik tombol di atas untuk menambah.</p>';
+                return;
+            }
+
+            const displayData = [...data].reverse();
+
+            displayData.forEach(item => {
+                let linksArray = [];
+                if (item.links && Array.isArray(item.links)) {
+                    linksArray = item.links;
+                } else if (item.video_url) {
+                    linksArray = [{ label: "Tonton Video", url: item.video_url }];
+                }
+
+                const card = document.createElement('div');
+                card.className = 'content-card';
+                
+                let linksHtml = '';
+                linksArray.forEach((link, idx) => {
+                    const btnLabel = link.label ? link.label : `Tautan ${idx + 1}`;
+                    linksHtml += `
+                        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="card-direct-btn">
+                            <span class="link-btn-label">🔗 ${btnLabel}</span>
+                            <span>▶</span>
+                        </a>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="card-link">
+                        <div class="thumb-container">
+                            <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
+                        </div>
+                        <div class="card-details">
+                            <h3 class="card-title">${item.title}</h3>
+                            <div class="multi-links-wrapper">
+                                ${linksHtml || '<p style="font-size: 0.75rem; color: #71717a">Tidak ada tautan terpasang.</p>'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="edit-action-bar">
+                        <button class="edit-trigger-btn" onclick="openModal('edit', '${item.id}')">✏️ Sunting</button>
+                    </div>
+                `;
+                gridContainer.appendChild(card);
+            });
+        }
+
+        // ==================== TABS FOR THUMBNAIL INPUT ====================
+        function switchThumbInput(type) {
+            selectedThumbnailType = type;
+            const tabUrl = document.getElementById('tab-btn-url');
+            const tabFile = document.getElementById('tab-btn-file');
+            const containerUrl = document.getElementById('thumb-url-container');
+            const containerFile = document.getElementById('thumb-file-container');
+
+            if (type === 'url') {
+                tabUrl.classList.add('active');
+                tabFile.classList.remove('active');
+                containerUrl.style.display = 'block';
+                containerFile.style.display = 'none';
+            } else {
+                tabUrl.classList.remove('active');
+                tabFile.classList.add('active');
+                containerUrl.style.display = 'none';
+                containerFile.style.display = 'block';
+            }
+        }
+
+        // ==================== UNGGAL FILE LOKAL (CONVERT TO BASE64) ====================
+        function handleLocalFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 1.5 * 1024 * 1024) {
+                alert("Peringatan: Gambar di atas 1.5MB dapat membebani database JSON. Direkomendasikan ukuran < 1MB.");
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                document.getElementById('file-preview-img').src = base64Data;
+                document.getElementById('file-preview-container').style.display = 'block';
+                document.getElementById('form-thumbnail-final').value = base64Data;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedFile() {
+            document.getElementById('form-thumbnail-file').value = "";
+            document.getElementById('file-preview-img').src = "";
+            document.getElementById('file-preview-container').style.display = 'none';
+            document.getElementById('form-thumbnail-final').value = "";
+        }
+
+        // ==================== MULTI-LINK DYNAMIC FIELD CONTROLLER ====================
+        function addLinkField(label = '', url = '') {
+            const container = document.getElementById('links-container');
+            const uniqueId = 'row-' + new Date().getTime() + '-' + Math.floor(Math.random() * 100);
+            
+            const row = document.createElement('div');
+            row.className = 'link-input-row';
+            row.id = uniqueId;
+            row.innerHTML = `
+                <input type="text" class="form-link-label" placeholder="Server 1" value="${label}" style="width: 35%;">
+                <input type="url" class="form-link-url" placeholder="https://..." value="${url}" style="width: 55%;">
+                <button type="button" class="remove-link-field-btn" onclick="removeLinkField('${uniqueId}')">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeLinkField(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) row.remove();
+        }
+
+        // ==================== MODAL WINDOW CONTROLLER ====================
+        function openModal(mode, id = null) {
+            if (!getAuthToken()) {
+                alert("Akses Ditolak! Harap konfigurasi Kunci Admin (Token) Anda terlebih dahulu di menu pengaturan ⚙️.");
+                openTokenModal();
+                return;
+            }
+
+            currentModalMode = mode;
+            document.getElementById('post-modal').style.display = 'flex';
+            document.getElementById('modal-error').style.display = 'none';
+            document.getElementById('links-container').innerHTML = '';
+            clearSelectedFile();
+            
+            if (mode === 'create') {
+                document.getElementById('modal-title').innerText = 'Tambah Postingan Baru';
+                document.getElementById('form-post-id').value = '';
+                document.getElementById('form-thumbnail-url').value = '';
+                document.getElementById('form-thumbnail-final').value = '';
+                document.getElementById('form-title').value = '';
+                document.getElementById('delete-btn').style.display = 'none';
+                switchThumbInput('url');
+                addLinkField('Tonton Video', '');
+            } else {
+                document.getElementById('modal-title').innerText = 'Sunting / Edit Postingan';
+                document.getElementById('delete-btn').style.display = 'block';
+                
+                const matchItem = databaseRecords.find(i => i.id === id);
+                if (matchItem) {
+                    document.getElementById('form-post-id').value = matchItem.id;
+                    document.getElementById('form-title').value = matchItem.title;
+                    const thumbSrc = matchItem.thumbnail || '';
+                    document.getElementById('form-thumbnail-final').value = thumbSrc;
+                    
+                    if (thumbSrc.startsWith('data:image')) {
+                        switchThumbInput('file');
+                        document.getElementById('form-thumbnail-url').value = '';
+                        document.getElementById('file-preview-img').src = thumbSrc;
+                        document.getElementById('file-preview-container').style.display = 'block';
+                    } else {
+                        switchThumbInput('url');
+                        document.getElementById('form-thumbnail-url').value = thumbSrc;
+                    }
+                    
+                    if (matchItem.links && Array.isArray(matchItem.links) && matchItem.links.length > 0) {
+                        matchItem.links.forEach(l => addLinkField(l.label, l.url));
+                    } else if (matchItem.video_url) {
+                        addLinkField('Tonton Video', matchItem.video_url);
+                    } else {
+                        addLinkField('Tonton Video', '');
+                    }
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('post-modal').style.display = 'none';
+        }
+
+        // ==================== SAVE / UPDATE (PROSES KIRIM) ====================
+        async function savePostSubmit() {
+            const title = document.getElementById('form-title').value.trim();
+            const id = document.getElementById('form-post-id').value;
+            const saveBtn = document.getElementById('save-btn');
+            
+            let finalThumbnail = '';
+            if (selectedThumbnailType === 'url') {
+                finalThumbnail = document.getElementById('form-thumbnail-url').value.trim();
+            } else {
+                finalThumbnail = document.getElementById('form-thumbnail-final').value.trim();
+            }
+
+            const labelInputs = document.querySelectorAll('.form-link-label');
+            const urlInputs = document.querySelectorAll('.form-link-url');
+            const linksCollector = [];
+
+            for (let i = 0; i < urlInputs.length; i++) {
+                const linkUrl = urlInputs[i].value.trim();
+                const linkLabel = labelInputs[i].value.trim() || `Tautan ${i + 1}`;
+                if (linkUrl) {
+                    linksCollector.push({ label: linkLabel, url: linkUrl });
+                }
+            }
+
+            if (!title) { showError('Judul postingan wajib diisi!'); return; }
+            if (!finalThumbnail) { showError('Harap masukkan URL gambar atau unggah gambar untuk thumbnail!'); return; }
+            if (linksCollector.length === 0) { showError('Harap masukkan minimal 1 alamat URL tautan tujuan!'); return; }
+
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'Menyimpan...';
+
+            if (currentModalMode === 'create') {
+                const newRecord = {
+                    id: new Date().getTime().toString(), 
+                    title: title,
+                    thumbnail: finalThumbnail,
+                    links: linksCollector
+                };
+                databaseRecords.push(newRecord);
+            } else {
+                const targetIndex = databaseRecords.findIndex(i => i.id === id);
+                if (targetIndex !== -1) {
+                    databaseRecords[targetIndex].title = title;
+                    databaseRecords[targetIndex].thumbnail = finalThumbnail;
+                    databaseRecords[targetIndex].links = linksCollector;
+                    if (databaseRecords[targetIndex].video_url) {
+                        delete databaseRecords[targetIndex].video_url;
+                    }
+                }
+            }
+
+            const success = await pushDatabaseToGitHub("Pembaruan direktori video");
+            if (success) {
+                closeModal();
+                loadDatabase();
+            }
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Simpan';
+        }
+
+        // ==================== PROSES HAPUS DATA ====================
+        async function deletePost() {
+            const id = document.getElementById('form-post-id').value;
+            if (!confirm("Apakah Anda yakin ingin menghapus postingan ini secara permanen?")) return;
+
+            const deleteBtn = document.getElementById('delete-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.innerText = 'Menghapus...';
+
+            databaseRecords = databaseRecords.filter(item => item.id !== id);
+
+            const success = await pushDatabaseToGitHub("Menghapus item dari direktori");
+            if (success) {
+                closeModal();
+                loadDatabase();
+            }
+            deleteBtn.disabled = false;
+            deleteBtn.innerText = '🗑️ Hapus Postingan';
+        }
+
+        // ==================== COMMIT DATA KE REPO GITHUB ====================
+        async function pushDatabaseToGitHub(commitMessage) {
+            const token = getAuthToken();
+            if (!token) {
+                showError("Kunci Akses (Token) Admin tidak ditemukan!");
+                return false;
+            }
+
+            const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+            
+            // PERBAIKAN: Mengambil info file (SHA) terbaru tepat sebelum melakukan perubahan.
+            // Langkah ini mencegah terjadinya error "sha wasn't supplied" karena file lokal belum termutakhir.
+            let latestSha = currentFileSha;
+            try {
+                const checkResp = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${token}`
+                    },
+                    cache: 'no-store'
+                });
+                if (checkResp.ok) {
+                    const checkData = await checkResp.json();
+                    latestSha = checkData.sha;
+                    currentFileSha = latestSha;
+                }
+            } catch (err) {
+                console.warn("Gagal mengecek SHA terbaru, tetap menggunakan SHA lokal (jika ada).", err);
+            }
+
+            const jsonString = JSON.stringify(databaseRecords, null, 2);
+            const encodedContent = encodeBase64Utf8(jsonString);
+
+            const bodyPayload = {
+                message: commitMessage,
+                content: encodedContent
+            };
+
+            // Masukkan SHA yang baru dipastikan
+            if (latestSha) {
+                bodyPayload.sha = latestSha;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(bodyPayload)
+                });
+
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(responseData.message || "Gagal melakukan commit.");
+                }
+
+                // Setelah berhasil PUT, update SHA dengan SHA file versi terbaru dari respons API
+                if (responseData.content && responseData.content.sha) {
+                    currentFileSha = responseData.content.sha;
+                }
+
+                return true;
+
+            } catch (err) {
+                console.error(err);
+                showError(`Gagal melakukan sinkronisasi: ${err.message}`);
+                return false;
+            }
+        }
+
+        // ==================== TOKEN SETTINGS MODAL FUNCTIONS ====================
+        function openTokenModal() {
+            document.getElementById('token-modal').style.display = 'flex';
+            document.getElementById('admin-token-input').value = getAuthToken();
+            document.getElementById('token-modal-msg').innerText = '';
+        }
+
+        function closeTokenModal() {
+            document.getElementById('token-modal').style.display = 'none';
+        }
+
+        function saveAdminToken() {
+            const tokenInput = document.getElementById('admin-token-input').value.trim();
+            const msgEl = document.getElementById('token-modal-msg');
+
+            if (!tokenInput) {
+                localStorage.removeItem('vokep_github_token');
+                msgEl.style.color = '#ef4444';
+                msgEl.innerText = "Kunci Admin dihapus. Mode baca aktif.";
+            } else {
+                localStorage.setItem('vokep_github_token', tokenInput);
+                msgEl.style.color = '#10b981';
+                msgEl.innerText = "Kunci Admin disimpan dengan sukses!";
+            }
+
+            setTimeout(() => {
+                closeTokenModal();
+                loadDatabase();
+            }, 1000);
+        }
+
+        function showError(msg) {
+            const errBanner = document.getElementById('modal-error');
+            errBanner.innerText = msg;
+            errBanner.style.display = 'block';
+        }
+    </script>
 </body>
 </html>
+
