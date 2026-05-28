@@ -1,0 +1,162 @@
+/* RESET & VARIABEL DASAR */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: #0f0f12;
+    color: #e4e4e7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 50px;
+}
+
+/* HEADER STYLING */
+.main-header {
+    background: #18181c;
+    border-bottom: 1px solid #27272a;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo { font-size: 1.3rem; color: #fff; font-weight: 700; cursor: pointer; }
+
+.add-post-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.add-post-btn:hover { background: #1d4ed8; }
+
+/* TAMPILAN BERANDA */
+.main-content { max-width: 1200px; margin: 30px auto 0 auto; padding: 0 20px; }
+.section-info { margin-bottom: 24px; }
+.section-info h2 { color: #fff; font-size: 1.4rem; margin-bottom: 4px; }
+.section-info p { color: #a1a1aa; font-size: 0.9rem; }
+
+/* GRID TAMPILAN KONTEN (FLEXIBLE HEIGHT) */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 24px;
+    align-items: start; /* Mengizinkan tinggi kartu berbeda secara fleksibel */
+}
+
+/* KARTU POSTINGAN */
+.content-card {
+    background: #18181c;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-link { text-decoration: none; color: inherit; display: block; }
+
+/* Tampilan Thumbnail Fleksibel Menyesuaikan Rasio Gambar */
+.thumb-container {
+    width: 100%;
+    background: #111114;
+    display: block;
+}
+
+.thumb-container img {
+    width: 100%;
+    height: auto; /* Mengikuti tinggi asli gambar secara fleksibel */
+    display: block;
+}
+
+.card-details { padding: 12px; }
+.card-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #e4e4e7;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+/* Tombol Sunting di bawah kartu */
+.edit-action-bar {
+    border-top: 1px solid #27272a;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: flex-end;
+    background: #141417;
+}
+
+.edit-trigger-btn {
+    background: #27272a;
+    color: #d4d4d8;
+    border: 1px solid #3f3f46;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+.edit-trigger-btn:hover { background: #3f3f46; color: #fff; }
+
+/* SYSTEM DIALOG / MODAL FORM CSS */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 200;
+    padding: 15px;
+}
+
+.modal-card {
+    background: #18181c;
+    border: 1px solid #27272a;
+    width: 100%; max-width: 480px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 16px; border-bottom: 1px solid #27272a;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h3 { font-size: 1.1rem; color: #fff; }
+.close-modal-btn { background: transparent; border: none; color: #a1a1aa; font-size: 1.1rem; cursor: pointer; }
+
+.modal-body { padding: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; color: #a1a1aa; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500; }
+.form-group input {
+    width: 100%; background: #0f0f12; border: 1px solid #27272a;
+    padding: 10px; border-radius: 6px; color: #fff; font-size: 0.9rem;
+}
+.form-group input:focus { border-color: #2563eb; outline: none; }
+.form-group small { color: #71717a; font-size: 0.75rem; margin-top: 4px; display: block; }
+
+.modal-footer {
+    padding: 14px 20px; background: #141417; border-top: 1px solid #27272a;
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.footer-right-actions { display: flex; gap: 8px; }
+
+.submit-btn { background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.cancel-btn { background: #27272a; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+.danger-btn { background: #dc2626; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+.danger-btn:hover { background: #b91c1c; }
+
+.status-msg { color: #a1a1aa; font-size: 0.9rem; text-align: center; width: 100%; padding: 40px 0; }
+.error-banner { background: rgba(220, 38, 38, 0.2); color: #fca5a5; border: 1px solid #dc2626; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 10px; }
