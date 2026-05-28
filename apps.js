@@ -9,6 +9,7 @@ const GITHUB_CONFIG = {
 let databaseRecords = [];
 let currentFileSha = null;
 let currentModalMode = 'create'; // 'create' atau 'edit'
+let selectedThumbnailType = 'url'; // 'url' atau 'file'
 
 // Jalankan sistem saat halaman selesai dimuat sepenuhnya
 window.onload = function() {
@@ -19,10 +20,7 @@ window.onload = function() {
 
 // Fungsi mendekode Base64 ke String UTF-8 dengan aman (Mengatasi Spasi, Baris Baru, dan Emoji)
 function decodeBase64Utf8(base64Str) {
-    // 1. Bersihkan semua karakter spasi, baris baru (\n), atau return (\r) yang merusak format Base64
     const cleanedBase64 = base64Str.replace(/\s/g, '');
-    
-    // 2. Lakukan konversi string biner menggunakan atob
     const binaryString = atob(cleanedBase64);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
@@ -31,7 +29,6 @@ function decodeBase64Utf8(base64Str) {
         bytes[i] = binaryString.charCodeAt(i);
     }
     
-    // 3. Ubah byte array menjadi string UTF-8 asli secara aman
     return new TextDecoder('utf-8').decode(bytes);
 }
 
@@ -44,7 +41,6 @@ function encodeBase64Utf8(str) {
     }
     return btoa(binaryString);
 }
-
 
 // ==================== BACA DATA DARI CLOUD (FETCH) ====================
 async function loadDatabase() {
@@ -80,7 +76,7 @@ async function loadDatabase() {
         const rawData = await response.json();
         currentFileSha = rawData.sha;
         
-        // Gunakan dekoder kustom baru kita yang anti-error
+        // Dekode konten JSON aman
         const decodedContent = decodeBase64Utf8(rawData.content);
         databaseRecords = JSON.parse(decodedContent);
         
@@ -106,17 +102,43 @@ function renderView(data) {
     const displayData = [...data].reverse();
 
     displayData.forEach(item => {
+        // Normalisasi format link lama ke skema multi-tautan baru
+        let linksArray = [];
+        if (item.links && Array.isArray(item.links)) {
+            linksArray = item.links;
+        } else if (item.video_url) {
+            // Konversi dari format database versi lama
+            linksArray = [{ label: "Tonton Video", url: item.video_url }];
+        }
+
         const card = document.createElement('div');
         card.className = 'content-card';
+        
+        // Buat elemen card HTML
+        let linksHtml = '';
+        linksArray.forEach((link, idx) => {
+            const btnLabel = link.label ? link.label : `Tautan ${idx + 1}`;
+            linksHtml += `
+                <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="card-direct-btn">
+                    <span class="link-btn-label">🔗 ${btnLabel}</span>
+                    <span>▶</span>
+                </a>
+            `;
+        });
+
         card.innerHTML = `
-            <a href="${item.video_url}" target="_blank" rel="noopener noreferrer" class="card-link">
+            <div class="card-link">
                 <div class="thumb-container">
                     <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
                 </div>
                 <div class="card-details">
                     <h3 class="card-title">${item.title}</h3>
+                    <!-- Kumpulan multi-tautan dynamic -->
+                    <div class="multi-links-wrapper">
+                        ${linksHtml || '<p style="font-size: 0.75rem; color: #71717a">Tidak ada tautan terpasang.</p>'}
+                    </div>
                 </div>
-            </a>
+            </div>
             <div class="edit-action-bar">
                 <button class="edit-trigger-btn" onclick="openModal('edit', '${item.id}')">✏️ Sunting</button>
             </div>
@@ -125,19 +147,104 @@ function renderView(data) {
     });
 }
 
+// ==================== TABS INTERFACE CONTROLLER FOR THUMBNAIL ====================
+function switchThumbInput(type) {
+    selectedThumbnailType = type;
+    const tabUrl = document.getElementById('tab-btn-url');
+    const tabFile = document.getElementById('tab-btn-file');
+    const containerUrl = document.getElementById('thumb-url-container');
+    const containerFile = document.getElementById('thumb-file-container');
+
+    if (type === 'url') {
+        tabUrl.classList.add('active');
+        tabFile.classList.remove('active');
+        containerUrl.style.display = 'block';
+        containerFile.style.display = 'none';
+    } else {
+        tabUrl.classList.remove('active');
+        tabFile.classList.add('active');
+        containerUrl.style.display = 'none';
+        containerFile.style.display = 'block';
+    }
+}
+
+// ==================== UNGGAL FILE LOKAL (CONVERT TO BASE64) ====================
+function handleLocalFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Batasi ukuran gambar demi performa JSON (opsional, disarankan < 1.5MB)
+    if (file.size > 2 * 1024 * 1024) {
+        alert("Peringatan: Ukuran gambar di atas 2MB mungkin memperlambat performa sistem.");
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Data = e.target.result;
+        
+        // Tampilkan pratinjau gambar di modal
+        document.getElementById('file-preview-img').src = base64Data;
+        document.getElementById('file-preview-container').style.display = 'block';
+        
+        // Simpan data base64 ke elemen penampung final
+        document.getElementById('form-thumbnail-final').value = base64Data;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearSelectedFile() {
+    document.getElementById('form-thumbnail-file').value = "";
+    document.getElementById('file-preview-img').src = "";
+    document.getElementById('file-preview-container').style.display = 'none';
+    document.getElementById('form-thumbnail-final').value = "";
+}
+
+// ==================== MULTI-LINK DYNAMIC FIELD CONTROLLER ====================
+function addLinkField(label = '', url = '') {
+    const container = document.getElementById('links-container');
+    const uniqueId = 'row-' + new Date().getTime() + '-' + Math.floor(Math.random() * 100);
+    
+    const row = document.createElement('div');
+    row.className = 'link-input-row';
+    row.id = uniqueId;
+    row.innerHTML = `
+        <input type="text" class="form-link-label" placeholder="Nama Tombol (misal: Server 1)" value="${label}" style="width: 35%;">
+        <input type="url" class="form-link-url" placeholder="https://..." value="${url}" style="width: 55%;">
+        <button type="button" class="remove-link-field-btn" onclick="removeLinkField('${uniqueId}')">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+function removeLinkField(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+    }
+}
+
 // ==================== MODAL WINDOW CONTROLLER ====================
 function openModal(mode, id = null) {
     currentModalMode = mode;
     document.getElementById('post-modal').style.display = 'flex';
     document.getElementById('modal-error').style.display = 'none';
     
+    // Reset Dynamic Links
+    document.getElementById('links-container').innerHTML = '';
+    
+    // Reset File Input
+    clearSelectedFile();
+    
     if (mode === 'create') {
         document.getElementById('modal-title').innerText = 'Tambah Postingan Baru';
         document.getElementById('form-post-id').value = '';
+        document.getElementById('form-thumbnail-url').value = '';
+        document.getElementById('form-thumbnail-final').value = '';
         document.getElementById('form-title').value = '';
-        document.getElementById('form-thumbnail').value = '';
-        document.getElementById('form-url').value = '';
         document.getElementById('delete-btn').style.display = 'none';
+        
+        switchThumbInput('url');
+        // Tambah kolom input tautan perdana
+        addLinkField('Tonton Video', '');
     } else {
         document.getElementById('modal-title').innerText = 'Sunting / Edit Postingan';
         document.getElementById('delete-btn').style.display = 'block';
@@ -147,8 +254,33 @@ function openModal(mode, id = null) {
         if (matchItem) {
             document.getElementById('form-post-id').value = matchItem.id;
             document.getElementById('form-title').value = matchItem.title;
-            document.getElementById('form-thumbnail').value = matchItem.thumbnail;
-            document.getElementById('form-url').value = matchItem.video_url;
+            
+            // Periksa jenis gambar thumbnail lama (URL atau Base64)
+            const thumbSrc = matchItem.thumbnail || '';
+            document.getElementById('form-thumbnail-final').value = thumbSrc;
+            
+            if (thumbSrc.startsWith('data:image')) {
+                // Gambar Base64 Lokal
+                switchThumbInput('file');
+                document.getElementById('form-thumbnail-url').value = '';
+                document.getElementById('file-preview-img').src = thumbSrc;
+                document.getElementById('file-preview-container').style.display = 'block';
+            } else {
+                // Gambar URL Eksternal biasa
+                switchThumbInput('url');
+                document.getElementById('form-thumbnail-url').value = thumbSrc;
+            }
+            
+            // Muat multi-tautan lama
+            if (matchItem.links && Array.isArray(matchItem.links) && matchItem.links.length > 0) {
+                matchItem.links.forEach(l => {
+                    addLinkField(l.label, l.url);
+                });
+            } else if (matchItem.video_url) {
+                addLinkField('Tonton Video', matchItem.video_url);
+            } else {
+                addLinkField('Tonton Video', '');
+            }
         }
     }
 }
@@ -160,13 +292,44 @@ function closeModal() {
 // ==================== SAVE / UPDATE (PROSES KIRIM) ====================
 async function savePostSubmit() {
     const title = document.getElementById('form-title').value.trim();
-    const thumbnail = document.getElementById('form-thumbnail').value.trim();
-    const video_url = document.getElementById('form-url').value.trim();
     const id = document.getElementById('form-post-id').value;
     const saveBtn = document.getElementById('save-btn');
+    
+    // Dapatkan data gambar final berdasarkan tipe input yang aktif
+    let finalThumbnail = '';
+    if (selectedThumbnailType === 'url') {
+        finalThumbnail = document.getElementById('form-thumbnail-url').value.trim();
+    } else {
+        finalThumbnail = document.getElementById('form-thumbnail-final').value.trim();
+    }
 
-    if (!title || !thumbnail || !video_url) {
-        showError('Semua kolom formulir wajib diisi!');
+    // Ambil semua daftar link tautan dinamis yang telah diinput
+    const labelInputs = document.querySelectorAll('.form-link-label');
+    const urlInputs = document.querySelectorAll('.form-link-url');
+    const linksCollector = [];
+
+    for (let i = 0; i < urlInputs.length; i++) {
+        const linkUrl = urlInputs[i].value.trim();
+        const linkLabel = labelInputs[i].value.trim() || `Tautan ${i + 1}`;
+        if (linkUrl) {
+            linksCollector.push({
+                label: linkLabel,
+                url: linkUrl
+            });
+        }
+    }
+
+    // Validasi formulir dasar
+    if (!title) {
+        showError('Judul postingan wajib diisi!');
+        return;
+    }
+    if (!finalThumbnail) {
+        showError('Harap tentukan URL gambar atau pilih gambar lokal untuk thumbnail!');
+        return;
+    }
+    if (linksCollector.length === 0) {
+        showError('Minimal masukkan 1 alamat URL tautan tujuan!');
         return;
     }
 
@@ -178,8 +341,8 @@ async function savePostSubmit() {
         const newRecord = {
             id: new Date().getTime().toString(), 
             title: title,
-            thumbnail: thumbnail,
-            video_url: video_url
+            thumbnail: finalThumbnail,
+            links: linksCollector
         };
         databaseRecords.push(newRecord);
     } else {
@@ -187,12 +350,16 @@ async function savePostSubmit() {
         const targetIndex = databaseRecords.findIndex(i => i.id === id);
         if (targetIndex !== -1) {
             databaseRecords[targetIndex].title = title;
-            databaseRecords[targetIndex].thumbnail = thumbnail;
-            databaseRecords[targetIndex].video_url = video_url;
+            databaseRecords[targetIndex].thumbnail = finalThumbnail;
+            databaseRecords[targetIndex].links = linksCollector;
+            // Hapus field single lama jika ada demi kerapian database
+            if (databaseRecords[targetIndex].video_url) {
+                delete databaseRecords[targetIndex].video_url;
+            }
         }
     }
 
-    const success = await pushDatabaseToGitHub("Pembaruan direktori video via dashboard");
+    const success = await pushDatabaseToGitHub("Pembaruan direktori video dan multi-link");
     if (success) {
         closeModal();
         loadDatabase();

@@ -50,7 +50,7 @@ body {
 /* GRID TAMPILAN KONTEN (FLEXIBLE HEIGHT) */
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
     align-items: start; /* Mengizinkan tinggi kartu berbeda secara fleksibel */
 }
@@ -81,13 +81,51 @@ body {
     display: block;
 }
 
-.card-details { padding: 12px; }
+.card-details { padding: 14px; }
 .card-title {
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #e4e4e7;
     line-height: 1.4;
     margin-bottom: 12px;
+}
+
+/* Navigasi Link Lebih dari Satu */
+.multi-links-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #27272a;
+}
+
+.card-direct-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #202024;
+    color: #93c5fd;
+    border: 1px solid #1e3a8a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.card-direct-btn:hover {
+    background: #1e40af;
+    color: #ffffff;
+    border-color: #3b82f6;
+}
+
+.link-btn-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 80%;
 }
 
 /* Tombol Sunting di bawah kartu */
@@ -119,14 +157,16 @@ body {
     display: flex; justify-content: center; align-items: center;
     z-index: 200;
     padding: 15px;
+    overflow-y: auto;
 }
 
 .modal-card {
     background: #18181c;
     border: 1px solid #27272a;
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 520px;
     border-radius: 10px;
     overflow: hidden;
+    margin: auto;
 }
 
 .modal-header {
@@ -136,8 +176,8 @@ body {
 .modal-header h3 { font-size: 1.1rem; color: #fff; }
 .close-modal-btn { background: transparent; border: none; color: #a1a1aa; font-size: 1.1rem; cursor: pointer; }
 
-.modal-body { padding: 20px; }
-.form-group { margin-bottom: 16px; }
+.modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+.form-group { margin-bottom: 20px; }
 .form-group label { display: block; color: #a1a1aa; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500; }
 .form-group input {
     width: 100%; background: #0f0f12; border: 1px solid #27272a;
@@ -146,6 +186,97 @@ body {
 .form-group input:focus { border-color: #2563eb; outline: none; }
 .form-group small { color: #71717a; font-size: 0.75rem; margin-top: 4px; display: block; }
 
+/* Desain Pilihan Tab untuk Thumbnail */
+.tab-header {
+    display: flex;
+    border-bottom: 1px solid #27272a;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.tab-link {
+    background: transparent;
+    border: none;
+    color: #71717a;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+.clear-file-btn {
+    background: #3f3f46;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+/* Tata Letak Input Tautan Dinamis */
+.links-dynamic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.link-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #141417;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #27272a;
+}
+
+.link-input-row input {
+    padding: 8px;
+    font-size: 0.85rem;
+}
+
+.remove-link-field-btn {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #991b1b;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.remove-link-field-btn:hover {
+    background: #b91c1c;
+    color: #fff;
+}
+
+.add-link-field-btn {
+    width: 100%;
+    background: #1e293b;
+    color: #38bdf8;
+    border: 1px dashed #38bdf8;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.add-link-field-btn:hover {
+    background: #38bdf8;
+    color: #0f172a;
+}
+
+/* MODAL FOOTER */
 .modal-footer {
     padding: 14px 20px; background: #141417; border-top: 1px solid #27272a;
     display: flex; justify-content: space-between; align-items: center;
