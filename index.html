@@ -8,24 +8,29 @@
 </head>
 <body>
 
+    <!-- HEADER UTAMA -->
     <header class="main-header">
         <div class="header-container">
             <h1 class="logo" onclick="window.location.reload()">VideoHub</h1>
+            <!-- Tombol Tambah Postingan -->
             <button class="add-post-btn" onclick="openModal('create')">➕ Tambah Postingan</button>
         </div>
     </header>
 
+    <!-- KONTEN UTAMA -->
     <main class="main-content">
         <div class="section-info">
             <h2>Koleksi Tautan Media</h2>
             <p>Direktori tautan eksternal dengan pratinjau konten dinamis.</p>
         </div>
 
+        <!-- Grid Tampilan Konten -->
         <div id="video-grid" class="video-grid">
             <p class="status-msg">Memuat data dari database...</p>
         </div>
     </main>
 
+    <!-- JENDELA POPUP (MODAL FORM) -->
     <div id="post-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
@@ -33,6 +38,7 @@
                 <button class="close-modal-btn" onclick="closeModal()">✕</button>
             </div>
             <div class="modal-body">
+                <!-- Input ID Tersembunyi untuk proses Edit -->
                 <input type="hidden" id="form-post-id">
 
                 <div class="form-group">
@@ -54,6 +60,7 @@
                 <div id="modal-error" class="error-banner" style="display: none;"></div>
             </div>
             <div class="modal-footer">
+                <!-- Tombol Hapus Postingan -->
                 <button id="delete-btn" class="danger-btn" onclick="deletePost()" style="display: none;">🗑️ Hapus Postingan</button>
                 <div class="footer-right-actions">
                     <button class="cancel-btn" onclick="closeModal()">Batal</button>
@@ -63,6 +70,7 @@
         </div>
     </div>
 
+    <!-- Menghubungkan ke berkas javascript apps.js -->
     <script src="apps.js"></script>
 </body>
 </html>

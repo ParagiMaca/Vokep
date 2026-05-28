@@ -1,32 +1,65 @@
 // ==================== CONFIGURATION ====================
 const GITHUB_CONFIG = {
     username: "ParagiMaca",              // Username GitHub Anda
-    repo: "vokep",                       // Nama repositori baru Anda
-    path: "video_data.json",            // Berkas database penyimpanan otomatis
-    token: "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" // Token aktif Anda
+    repo: "vokep",                       // Nama repositori Anda
+    path: "video_data.json",            // Nama berkas database JSON
+    token: "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" // Token GitHub aktif Anda
 };
 
 let databaseRecords = [];
 let currentFileSha = null;
 let currentModalMode = 'create'; // 'create' atau 'edit'
 
-// Inisialisasi awal saat dokumen siap
+// Jalankan sistem saat halaman selesai dimuat sepenuhnya
 window.onload = function() {
     loadDatabase();
 };
 
-// ==================== READ DATA (FETCH) ====================
+// ==================== HELPER DEKODE & ENKODE BASE64 UTF-8 (SOLUSI ERROR ATOB) ====================
+
+// Fungsi mendekode Base64 ke String UTF-8 dengan aman (Mengatasi Spasi, Baris Baru, dan Emoji)
+function decodeBase64Utf8(base64Str) {
+    // 1. Bersihkan semua karakter spasi, baris baru (\n), atau return (\r) yang merusak format Base64
+    const cleanedBase64 = base64Str.replace(/\s/g, '');
+    
+    // 2. Lakukan konversi string biner menggunakan atob
+    const binaryString = atob(cleanedBase64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // 3. Ubah byte array menjadi string UTF-8 asli secara aman
+    return new TextDecoder('utf-8').decode(bytes);
+}
+
+// Fungsi mengkodekan String UTF-8 ke Base64 dengan aman
+function encodeBase64Utf8(str) {
+    const bytes = new TextEncoder().encode(str);
+    let binaryString = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binaryString += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binaryString);
+}
+
+
+// ==================== BACA DATA DARI CLOUD (FETCH) ====================
 async function loadDatabase() {
     const gridContainer = document.getElementById('video-grid');
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
 
     try {
         const response = await fetch(url, {
-            headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` }
+            headers: { 
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Cache-Control': 'no-cache'
+            }
         });
 
-        // PERBAIKAN: Jika file json belum ada di repo baru, jangan lempar error.
-        // Langsung buat array kosong agar tombol ➕ bisa mendikte pembuatan file baru nanti.
+        // Jika file video_data.json belum terbentuk sama sekali di repositori
         if (response.status === 404) {
             databaseRecords = [];
             currentFileSha = null;
@@ -34,21 +67,21 @@ async function loadDatabase() {
             return;
         }
 
-        // Jika ada kendala hak akses token salah/invalid
+        // Jika token tidak memiliki izin tulis/baca (Unauthorized)
         if (response.status === 401) {
-            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Kunci Akses (Token GitHub) Tidak Sah atau salah.</p>`;
+            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Hak Akses Gagal: Kunci Akses (Token) Anda salah atau kedaluwarsa.</p>`;
             return;
         }
 
         if (!response.ok) {
-            throw new Error(`Respons server bermasalah: ${response.status}`);
+            throw new Error(`Respons server gagal dengan status: ${response.status}`);
         }
 
         const rawData = await response.json();
         currentFileSha = rawData.sha;
         
-        // Decode base64 konten dari GitHub secara aman
-        const decodedContent = decodeURIComponent(escape(atob(rawData.content)));
+        // Gunakan dekoder kustom baru kita yang anti-error
+        const decodedContent = decodeBase64Utf8(rawData.content);
         databaseRecords = JSON.parse(decodedContent);
         
         renderView(databaseRecords);
@@ -59,17 +92,17 @@ async function loadDatabase() {
     }
 }
 
-
+// ==================== RENDERING TAMPILAN KARTU ====================
 function renderView(data) {
     const gridContainer = document.getElementById('video-grid');
     gridContainer.innerHTML = '';
 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         gridContainer.innerHTML = '<p class="status-msg">Belum ada konten tersedia. Klik tombol di atas untuk menambah.</p>';
         return;
     }
 
-    // Urutkan dari yang terbaru (postingan baru berada di atas)
+    // Tampilkan postingan baru di atas (urutan mundur)
     const displayData = [...data].reverse();
 
     displayData.forEach(item => {
@@ -78,7 +111,7 @@ function renderView(data) {
         card.innerHTML = `
             <a href="${item.video_url}" target="_blank" rel="noopener noreferrer" class="card-link">
                 <div class="thumb-container">
-                    <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Image+Not+Found'">
+                    <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
                 </div>
                 <div class="card-details">
                     <h3 class="card-title">${item.title}</h3>
@@ -92,7 +125,7 @@ function renderView(data) {
     });
 }
 
-// ==================== MODAL CONTROLLER ====================
+// ==================== MODAL WINDOW CONTROLLER ====================
 function openModal(mode, id = null) {
     currentModalMode = mode;
     document.getElementById('post-modal').style.display = 'flex';
@@ -124,7 +157,7 @@ function closeModal() {
     document.getElementById('post-modal').style.display = 'none';
 }
 
-// ==================== SAVE & UPDATE LOGIC (WRITE) ====================
+// ==================== SAVE / UPDATE (PROSES KIRIM) ====================
 async function savePostSubmit() {
     const title = document.getElementById('form-title').value.trim();
     const thumbnail = document.getElementById('form-thumbnail').value.trim();
@@ -168,7 +201,7 @@ async function savePostSubmit() {
     saveBtn.innerText = 'Simpan';
 }
 
-// ==================== DELETE LOGIC ====================
+// ==================== PROSES HAPUS DATA ====================
 async function deletePost() {
     const id = document.getElementById('form-post-id').value;
     if (!confirm("Apakah Anda yakin ingin menghapus postingan ini secara permanen?")) return;
@@ -188,20 +221,20 @@ async function deletePost() {
     deleteBtn.innerText = '🗑️ Hapus Postingan';
 }
 
-// ==================== PUSH COMMAND (COMMIT KE GITHUB) ====================
+// ==================== COMMIT DATA KE REPO GITHUB ====================
 async function pushDatabaseToGitHub(commitMessage) {
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
     
-    // Konversi string ke Base64 UTF-8 dengan aman
+    // Konversi string JSON ke Base64 UTF-8 menggunakan encoder baru yang aman
     const jsonString = JSON.stringify(databaseRecords, null, 2);
-    const encodedContent = btoa(unescape(encodeURIComponent(jsonString)));
+    const encodedContent = encodeBase64Utf8(jsonString);
 
     const bodyPayload = {
         message: commitMessage,
         content: encodedContent
     };
 
-    // Sertakan SHA lama jika memperbarui file yang sudah ada
+    // Sertakan SHA jika memperbarui file yang sudah terbentuk sebelumnya
     if (currentFileSha) {
         bodyPayload.sha = currentFileSha;
     }
@@ -218,7 +251,7 @@ async function pushDatabaseToGitHub(commitMessage) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Gagal sinkronisasi API.");
+            throw new Error(errorData.message || "Gagal melakukan commit.");
         }
         return true;
 
