@@ -2,23 +2,31 @@
 const GITHUB_CONFIG = {
     username: "ParagiMaca",              // Username GitHub Anda
     repo: "vokep",                       // Nama repositori Anda
-    path: "video_data.json",            // Nama berkas database JSON
-    token: "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" // Token GitHub aktif Anda
+    path: "video_data.json"              // Nama berkas database JSON
 };
 
 let databaseRecords = [];
 let currentFileSha = null;
-let currentModalMode = 'create'; // 'create' atau 'edit'
-let selectedThumbnailType = 'url'; // 'url' atau 'file'
+let currentModalMode = 'create'; 
+let selectedThumbnailType = 'url'; 
+
+// Mengambil Token dari browser lokal HP Anda secara mandiri
+function getAuthToken() {
+    return localStorage.getItem('vokep_github_token') || "";
+}
 
 // Jalankan sistem saat halaman selesai dimuat sepenuhnya
 window.onload = function() {
+    // Cek apakah token admin sudah dikonfigurasi secara lokal
+    if (!getAuthToken()) {
+        console.warn("Sistem berjalan dalam mode baca. Atur kunci admin di menu pengaturan.");
+    }
     loadDatabase();
 };
 
 // ==================== HELPER DEKODE & ENKODE BASE64 UTF-8 (SOLUSI ERROR ATOB) ====================
 
-// Fungsi mendekode Base64 ke String UTF-8 dengan aman (Mengatasi Spasi, Baris Baru, dan Emoji)
+// Fungsi mendekode Base64 ke String UTF-8 dengan aman
 function decodeBase64Utf8(base64Str) {
     const cleanedBase64 = base64Str.replace(/\s/g, '');
     const binaryString = atob(cleanedBase64);
@@ -28,7 +36,6 @@ function decodeBase64Utf8(base64Str) {
     for (let i = 0; i < len; i++) {
         bytes[i] = binaryString.charCodeAt(i);
     }
-    
     return new TextDecoder('utf-8').decode(bytes);
 }
 
@@ -47,15 +54,15 @@ async function loadDatabase() {
     const gridContainer = document.getElementById('video-grid');
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
 
-    try {
-        const response = await fetch(url, {
-            headers: { 
-                'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Cache-Control': 'no-cache'
-            }
-        });
+    const headers = { 'Cache-Control': 'no-cache' };
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `token ${token}`;
+    }
 
-        // Jika file video_data.json belum terbentuk sama sekali di repositori
+    try {
+        const response = await fetch(url, { headers });
+
         if (response.status === 404) {
             databaseRecords = [];
             currentFileSha = null;
@@ -63,9 +70,8 @@ async function loadDatabase() {
             return;
         }
 
-        // Jika token tidak memiliki izin tulis/baca (Unauthorized)
         if (response.status === 401) {
-            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Hak Akses Gagal: Kunci Akses (Token) Anda salah atau kedaluwarsa.</p>`;
+            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">⚠️ Token Salah/Kedaluwarsa. Silakan perbarui Kunci Admin di pojok kanan atas.</p>`;
             return;
         }
 
@@ -76,7 +82,6 @@ async function loadDatabase() {
         const rawData = await response.json();
         currentFileSha = rawData.sha;
         
-        // Dekode konten JSON aman
         const decodedContent = decodeBase64Utf8(rawData.content);
         databaseRecords = JSON.parse(decodedContent);
         
@@ -84,7 +89,18 @@ async function loadDatabase() {
 
     } catch (err) {
         console.error("Detail log kegagalan:", err);
-        gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">Gagal memuat katalog: ${err.message}</p>`;
+        // Jika gagal karena pembatasan rate limit publik (tanpa token)
+        if (err.message.includes("Failed to fetch") && !token) {
+            gridContainer.innerHTML = `
+                <div class="status-msg" style="color: #fbbf24;">
+                    <p>⚠️ Gagal terhubung tanpa Kunci Admin (Terkena Batas API Publik).</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: #a1a1aa;">
+                        Silakan klik tombol <strong>⚙️ Atur Kunci</strong> di kanan atas, masukkan token GitHub Anda, lalu muat ulang halaman.
+                    </p>
+                </div>`;
+        } else {
+            gridContainer.innerHTML = `<p class="status-msg" style="color: #f87171;">Gagal memuat katalog: ${err.message}</p>`;
+        }
     }
 }
 
@@ -98,23 +114,19 @@ function renderView(data) {
         return;
     }
 
-    // Tampilkan postingan baru di atas (urutan mundur)
     const displayData = [...data].reverse();
 
     displayData.forEach(item => {
-        // Normalisasi format link lama ke skema multi-tautan baru
         let linksArray = [];
         if (item.links && Array.isArray(item.links)) {
             linksArray = item.links;
         } else if (item.video_url) {
-            // Konversi dari format database versi lama
             linksArray = [{ label: "Tonton Video", url: item.video_url }];
         }
 
         const card = document.createElement('div');
         card.className = 'content-card';
         
-        // Buat elemen card HTML
         let linksHtml = '';
         linksArray.forEach((link, idx) => {
             const btnLabel = link.label ? link.label : `Tautan ${idx + 1}`;
@@ -133,7 +145,6 @@ function renderView(data) {
                 </div>
                 <div class="card-details">
                     <h3 class="card-title">${item.title}</h3>
-                    <!-- Kumpulan multi-tautan dynamic -->
                     <div class="multi-links-wrapper">
                         ${linksHtml || '<p style="font-size: 0.75rem; color: #71717a">Tidak ada tautan terpasang.</p>'}
                     </div>
@@ -147,7 +158,7 @@ function renderView(data) {
     });
 }
 
-// ==================== TABS INTERFACE CONTROLLER FOR THUMBNAIL ====================
+// ==================== TABS FOR THUMBNAIL INPUT ====================
 function switchThumbInput(type) {
     selectedThumbnailType = type;
     const tabUrl = document.getElementById('tab-btn-url');
@@ -173,20 +184,15 @@ function handleLocalFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Batasi ukuran gambar demi performa JSON (opsional, disarankan < 1.5MB)
-    if (file.size > 2 * 1024 * 1024) {
-        alert("Peringatan: Ukuran gambar di atas 2MB mungkin memperlambat performa sistem.");
+    if (file.size > 1.5 * 1024 * 1024) {
+        alert("Peringatan: Gambar di atas 1.5MB dapat membebani database JSON. Direkomendasikan ukuran < 1MB.");
     }
 
     const reader = new FileReader();
     reader.onload = function(e) {
         const base64Data = e.target.result;
-        
-        // Tampilkan pratinjau gambar di modal
         document.getElementById('file-preview-img').src = base64Data;
         document.getElementById('file-preview-container').style.display = 'block';
-        
-        // Simpan data base64 ke elemen penampung final
         document.getElementById('form-thumbnail-final').value = base64Data;
     };
     reader.readAsDataURL(file);
@@ -208,7 +214,7 @@ function addLinkField(label = '', url = '') {
     row.className = 'link-input-row';
     row.id = uniqueId;
     row.innerHTML = `
-        <input type="text" class="form-link-label" placeholder="Nama Tombol (misal: Server 1)" value="${label}" style="width: 35%;">
+        <input type="text" class="form-link-label" placeholder="Server 1" value="${label}" style="width: 35%;">
         <input type="url" class="form-link-url" placeholder="https://..." value="${url}" style="width: 55%;">
         <button type="button" class="remove-link-field-btn" onclick="removeLinkField('${uniqueId}')">✕</button>
     `;
@@ -217,21 +223,21 @@ function addLinkField(label = '', url = '') {
 
 function removeLinkField(rowId) {
     const row = document.getElementById(rowId);
-    if (row) {
-        row.remove();
-    }
+    if (row) row.remove();
 }
 
 // ==================== MODAL WINDOW CONTROLLER ====================
 function openModal(mode, id = null) {
+    if (!getAuthToken()) {
+        alert("Akses Ditolak! Harap konfigurasi Kunci Admin (Token) Anda terlebih dahulu di menu pengaturan ⚙️.");
+        openTokenModal();
+        return;
+    }
+
     currentModalMode = mode;
     document.getElementById('post-modal').style.display = 'flex';
     document.getElementById('modal-error').style.display = 'none';
-    
-    // Reset Dynamic Links
     document.getElementById('links-container').innerHTML = '';
-    
-    // Reset File Input
     clearSelectedFile();
     
     if (mode === 'create') {
@@ -241,41 +247,31 @@ function openModal(mode, id = null) {
         document.getElementById('form-thumbnail-final').value = '';
         document.getElementById('form-title').value = '';
         document.getElementById('delete-btn').style.display = 'none';
-        
         switchThumbInput('url');
-        // Tambah kolom input tautan perdana
         addLinkField('Tonton Video', '');
     } else {
         document.getElementById('modal-title').innerText = 'Sunting / Edit Postingan';
         document.getElementById('delete-btn').style.display = 'block';
         
-        // Cari data lama yang dipilih
         const matchItem = databaseRecords.find(i => i.id === id);
         if (matchItem) {
             document.getElementById('form-post-id').value = matchItem.id;
             document.getElementById('form-title').value = matchItem.title;
-            
-            // Periksa jenis gambar thumbnail lama (URL atau Base64)
             const thumbSrc = matchItem.thumbnail || '';
             document.getElementById('form-thumbnail-final').value = thumbSrc;
             
             if (thumbSrc.startsWith('data:image')) {
-                // Gambar Base64 Lokal
                 switchThumbInput('file');
                 document.getElementById('form-thumbnail-url').value = '';
                 document.getElementById('file-preview-img').src = thumbSrc;
                 document.getElementById('file-preview-container').style.display = 'block';
             } else {
-                // Gambar URL Eksternal biasa
                 switchThumbInput('url');
                 document.getElementById('form-thumbnail-url').value = thumbSrc;
             }
             
-            // Muat multi-tautan lama
             if (matchItem.links && Array.isArray(matchItem.links) && matchItem.links.length > 0) {
-                matchItem.links.forEach(l => {
-                    addLinkField(l.label, l.url);
-                });
+                matchItem.links.forEach(l => addLinkField(l.label, l.url));
             } else if (matchItem.video_url) {
                 addLinkField('Tonton Video', matchItem.video_url);
             } else {
@@ -295,7 +291,6 @@ async function savePostSubmit() {
     const id = document.getElementById('form-post-id').value;
     const saveBtn = document.getElementById('save-btn');
     
-    // Dapatkan data gambar final berdasarkan tipe input yang aktif
     let finalThumbnail = '';
     if (selectedThumbnailType === 'url') {
         finalThumbnail = document.getElementById('form-thumbnail-url').value.trim();
@@ -303,7 +298,6 @@ async function savePostSubmit() {
         finalThumbnail = document.getElementById('form-thumbnail-final').value.trim();
     }
 
-    // Ambil semua daftar link tautan dinamis yang telah diinput
     const labelInputs = document.querySelectorAll('.form-link-label');
     const urlInputs = document.querySelectorAll('.form-link-url');
     const linksCollector = [];
@@ -312,32 +306,18 @@ async function savePostSubmit() {
         const linkUrl = urlInputs[i].value.trim();
         const linkLabel = labelInputs[i].value.trim() || `Tautan ${i + 1}`;
         if (linkUrl) {
-            linksCollector.push({
-                label: linkLabel,
-                url: linkUrl
-            });
+            linksCollector.push({ label: linkLabel, url: linkUrl });
         }
     }
 
-    // Validasi formulir dasar
-    if (!title) {
-        showError('Judul postingan wajib diisi!');
-        return;
-    }
-    if (!finalThumbnail) {
-        showError('Harap tentukan URL gambar atau pilih gambar lokal untuk thumbnail!');
-        return;
-    }
-    if (linksCollector.length === 0) {
-        showError('Minimal masukkan 1 alamat URL tautan tujuan!');
-        return;
-    }
+    if (!title) { showError('Judul postingan wajib diisi!'); return; }
+    if (!finalThumbnail) { showError('Harap masukkan URL gambar atau unggah gambar untuk thumbnail!'); return; }
+    if (linksCollector.length === 0) { showError('Harap masukkan minimal 1 alamat URL tautan tujuan!'); return; }
 
     saveBtn.disabled = true;
     saveBtn.innerText = 'Menyimpan...';
 
     if (currentModalMode === 'create') {
-        // Buat objek record baru berbasis timestamp unik
         const newRecord = {
             id: new Date().getTime().toString(), 
             title: title,
@@ -346,13 +326,11 @@ async function savePostSubmit() {
         };
         databaseRecords.push(newRecord);
     } else {
-        // Update record yang sudah ada
         const targetIndex = databaseRecords.findIndex(i => i.id === id);
         if (targetIndex !== -1) {
             databaseRecords[targetIndex].title = title;
             databaseRecords[targetIndex].thumbnail = finalThumbnail;
             databaseRecords[targetIndex].links = linksCollector;
-            // Hapus field single lama jika ada demi kerapian database
             if (databaseRecords[targetIndex].video_url) {
                 delete databaseRecords[targetIndex].video_url;
             }
@@ -390,9 +368,13 @@ async function deletePost() {
 
 // ==================== COMMIT DATA KE REPO GITHUB ====================
 async function pushDatabaseToGitHub(commitMessage) {
+    const token = getAuthToken();
+    if (!token) {
+        showError("Kunci Akses (Token) Admin tidak ditemukan!");
+        return false;
+    }
+
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
-    
-    // Konversi string JSON ke Base64 UTF-8 menggunakan encoder baru yang aman
     const jsonString = JSON.stringify(databaseRecords, null, 2);
     const encodedContent = encodeBase64Utf8(jsonString);
 
@@ -401,7 +383,6 @@ async function pushDatabaseToGitHub(commitMessage) {
         content: encodedContent
     };
 
-    // Sertakan SHA jika memperbarui file yang sudah terbentuk sebelumnya
     if (currentFileSha) {
         bodyPayload.sha = currentFileSha;
     }
@@ -410,7 +391,7 @@ async function pushDatabaseToGitHub(commitMessage) {
         const response = await fetch(url, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(bodyPayload)
@@ -427,6 +408,37 @@ async function pushDatabaseToGitHub(commitMessage) {
         showError(`Gagal melakukan sinkronisasi: ${err.message}`);
         return false;
     }
+}
+
+// ==================== TOKEN SETTINGS MODAL FUNCTIONS ====================
+function openTokenModal() {
+    document.getElementById('token-modal').style.display = 'flex';
+    document.getElementById('admin-token-input').value = getAuthToken();
+    document.getElementById('token-modal-msg').innerText = '';
+}
+
+function closeTokenModal() {
+    document.getElementById('token-modal').style.display = 'none';
+}
+
+function saveAdminToken() {
+    const tokenInput = document.getElementById('admin-token-input').value.trim();
+    const msgEl = document.getElementById('token-modal-msg');
+
+    if (!tokenInput) {
+        localStorage.removeItem('vokep_github_token');
+        msgEl.style.color = '#ef4444';
+        msgEl.innerText = "Kunci Admin dihapus. Mode baca aktif.";
+    } else {
+        localStorage.setItem('vokep_github_token', tokenInput);
+        msgEl.style.color = '#10b981';
+        msgEl.innerText = "Kunci Admin disimpan dengan sukses!";
+    }
+
+    setTimeout(() => {
+        closeTokenModal();
+        loadDatabase(); // Muat ulang database menggunakan kunci baru
+    }, 1000);
 }
 
 function showError(msg) {

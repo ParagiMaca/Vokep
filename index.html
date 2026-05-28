@@ -12,8 +12,12 @@
     <header class="main-header">
         <div class="header-container">
             <h1 class="logo" onclick="window.location.reload()">VideoHub</h1>
-            <!-- Tombol Tambah Postingan -->
-            <button class="add-post-btn" onclick="openModal('create')">➕ Tambah Postingan</button>
+            <div class="header-actions">
+                <!-- Tombol Pengaturan Token (Kunci Admin) -->
+                <button class="settings-btn" onclick="openTokenModal()">⚙️ Atur Kunci</button>
+                <!-- Tombol Tambah Postingan -->
+                <button class="add-post-btn" onclick="openModal('create')">➕ Tambah</button>
+            </div>
         </div>
     </header>
 
@@ -30,7 +34,7 @@
         </div>
     </main>
 
-    <!-- JENDELA POPUP (MODAL FORM) -->
+    <!-- JENDELA POPUP (MODAL FORM POSTINGAN) -->
     <div id="post-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
@@ -38,7 +42,6 @@
                 <button class="close-modal-btn" onclick="closeModal()">✕</button>
             </div>
             <div class="modal-body">
-                <!-- Input ID Tersembunyi untuk proses Edit -->
                 <input type="hidden" id="form-post-id">
 
                 <!-- Judul -->
@@ -47,20 +50,20 @@
                     <input type="text" id="form-title" placeholder="Masukkan judul video/konten...">
                 </div>
 
-                <!-- Bagian Thumbnail (URL atau Unggah Lokal) -->
+                <!-- Pilihan Tipe Thumbnail -->
                 <div class="form-group">
-                    <label>Thumbnail Gambar (Fleksibel)</label>
+                    <label>Thumbnail Gambar</label>
                     <div class="tab-header">
                         <button type="button" id="tab-btn-url" class="tab-link active" onclick="switchThumbInput('url')">Salin URL Gambar</button>
-                        <button type="button" id="tab-btn-file" class="tab-link" onclick="switchThumbInput('file')">Unggah dari Perangkat</button>
+                        <button type="button" id="tab-btn-file" class="tab-link" onclick="switchThumbInput('file')">Unggah dari HP</button>
                     </div>
                     
-                    <!-- Input Tipe URL Gambar -->
+                    <!-- Input URL Gambar -->
                     <div id="thumb-url-container" class="tab-content">
                         <input type="url" id="form-thumbnail-url" placeholder="https://example.com/gambar.jpg">
                     </div>
                     
-                    <!-- Input Tipe File Lokal -->
+                    <!-- Input File Lokal -->
                     <div id="thumb-file-container" class="tab-content" style="display: none;">
                         <input type="file" id="form-thumbnail-file" accept="image/*" onchange="handleLocalFileSelect(event)">
                         <div id="file-preview-container" style="display: none; margin-top: 10px;">
@@ -69,16 +72,14 @@
                         </div>
                     </div>
                     
-                    <!-- Penyimpan Data Base64 / URL Final yang akan dikirim -->
                     <input type="hidden" id="form-thumbnail-final">
-                    <small>Pratinjau gambar akan otomatis menyesuaikan ukuran aslinya di beranda.</small>
                 </div>
 
                 <!-- Bagian URL Tujuan Dinamis (Satu atau Lebih) -->
                 <div class="form-group">
-                    <label>URL Tautan Tujuan (Unlimited)</label>
+                    <label>URL Tautan Tujuan (Bisa Lebih dari 1)</label>
                     <div id="links-container" class="links-dynamic-list">
-                        <!-- Kolom Input Tautan akan dirender secara dinamis oleh JavaScript -->
+                        <!-- Kolom Input Tautan akan dibuat oleh JavaScript -->
                     </div>
                     <button type="button" class="add-link-field-btn" onclick="addLinkField('', '')">➕ Tambah Tautan Lain</button>
                 </div>
@@ -86,7 +87,6 @@
                 <div id="modal-error" class="error-banner" style="display: none;"></div>
             </div>
             <div class="modal-footer">
-                <!-- Tombol Hapus Postingan -->
                 <button id="delete-btn" class="danger-btn" onclick="deletePost()" style="display: none;">🗑️ Hapus Postingan</button>
                 <div class="footer-right-actions">
                     <button class="cancel-btn" onclick="closeModal()">Batal</button>
@@ -96,7 +96,30 @@
         </div>
     </div>
 
-    <!-- Menghubungkan ke berkas javascript apps.js -->
+    <!-- JENDELA POPUP AMAN (PENGATURAN TOKEN/KUNCI ADMIN) -->
+    <div id="token-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>⚙️ Pengaturan Kunci Admin</h3>
+                <button class="close-modal-btn" onclick="closeTokenModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.8rem; color: #a1a1aa; margin-bottom: 15px; line-height: 1.4;">
+                    Masukkan Personal Access Token GitHub Anda di bawah ini agar Anda bisa mengunggah dan mengedit postingan langsung dari browser ini. Token disimpan aman secara lokal di HP Anda.
+                </p>
+                <div class="form-group">
+                    <label for="admin-token-input">Token GitHub (ghp_...)</label>
+                    <input type="password" id="admin-token-input" placeholder="Masukkan token ghp_ Anda...">
+                </div>
+                <div id="token-modal-msg" style="font-size: 0.8rem; font-weight: bold; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeTokenModal()">Tutup</button>
+                <button class="submit-btn" onclick="saveAdminToken()">Simpan Kunci</button>
+            </div>
+        </div>
+    </div>
+
     <script src="apps.js"></script>
 </body>
 </html>
