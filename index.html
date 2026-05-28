@@ -7,96 +7,56 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <!-- HEADER UTAMA -->
     <header class="main-header">
         <div class="header-container">
             <h1 class="logo" onclick="window.location.reload()">VideoHub</h1>
             <div class="header-actions">
-                <!-- Tombol Pengaturan Token (Kunci Admin) -->
                 <button class="settings-btn" onclick="openTokenModal()">⚙️ Atur Kunci</button>
-                <!-- Tombol Tambah Postingan -->
                 <button class="add-post-btn" onclick="openModal('create')">➕ Tambah</button>
             </div>
         </div>
     </header>
 
-    <!-- KONTEN UTAMA -->
     <main class="main-content">
         <div class="section-info">
             <h2>Koleksi Tautan Media</h2>
-            <p>Direktori tautan eksternal dengan pratinjau konten dinamis.</p>
         </div>
-
-        <!-- Grid Tampilan Konten -->
         <div id="video-grid" class="video-grid">
-            <p class="status-msg">Memuat data dari database...</p>
+            <p class="status-msg">Memuat data...</p>
         </div>
     </main>
 
-    <!-- JENDELA POPUP (MODAL FORM POSTINGAN) -->
+    <!-- Modal Form -->
     <div id="post-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="modal-title">Tambah Postingan Baru</h3>
+                <h3 id="modal-title">Tambah Postingan</h3>
                 <button class="close-modal-btn" onclick="closeModal()">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="form-post-id">
-
-                <!-- Judul -->
                 <div class="form-group">
-                    <label for="form-title">Judul Postingan</label>
-                    <input type="text" id="form-title" placeholder="Masukkan judul video/konten...">
+                    <label>Judul</label>
+                    <input type="text" id="form-title">
                 </div>
-
-                <!-- Pilihan Tipe Thumbnail -->
                 <div class="form-group">
-                    <label>Thumbnail Gambar</label>
-                    <div class="tab-header">
-                        <button type="button" id="tab-btn-url" class="tab-link active" onclick="switchThumbInput('url')">Salin URL Gambar</button>
-                        <button type="button" id="tab-btn-file" class="tab-link" onclick="switchThumbInput('file')">Unggah dari HP</button>
-                    </div>
-                    
-                    <!-- Input URL Gambar -->
-                    <div id="thumb-url-container" class="tab-content">
-                        <input type="url" id="form-thumbnail-url" placeholder="https://example.com/gambar.jpg">
-                    </div>
-                    
-                    <!-- Input File Lokal -->
-                    <div id="thumb-file-container" class="tab-content" style="display: none;">
-                        <input type="file" id="form-thumbnail-file" accept="image/*" onchange="handleLocalFileSelect(event)">
-                        <div id="file-preview-container" style="display: none; margin-top: 10px;">
-                            <img id="file-preview-img" src="" alt="Pratinjau Gambar" style="max-height: 120px; border-radius: 6px; border: 1px solid #27272a;">
-                            <button type="button" class="clear-file-btn" onclick="clearSelectedFile()">Hapus Gambar</button>
-                        </div>
-                    </div>
-                    
-                    <input type="hidden" id="form-thumbnail-final">
+                    <label>Thumbnail URL</label>
+                    <input type="url" id="form-thumbnail">
                 </div>
-
-                <!-- Bagian URL Tujuan Dinamis (Satu atau Lebih) -->
                 <div class="form-group">
-                    <label>URL Tautan Tujuan (Bisa Lebih dari 1)</label>
-                    <div id="links-container" class="links-dynamic-list">
-                        <!-- Kolom Input Tautan akan dibuat oleh JavaScript -->
-                    </div>
-                    <button type="button" class="add-link-field-btn" onclick="addLinkField('', '')">➕ Tambah Tautan Lain</button>
+                    <label>URL Tautan</label>
+                    <input type="url" id="form-url">
                 </div>
-
                 <div id="modal-error" class="error-banner" style="display: none;"></div>
             </div>
             <div class="modal-footer">
-                <button id="delete-btn" class="danger-btn" onclick="deletePost()" style="display: none;">🗑️ Hapus Postingan</button>
-                <div class="footer-right-actions">
-                    <button class="cancel-btn" onclick="closeModal()">Batal</button>
-                    <button id="save-btn" class="submit-btn" onclick="savePostSubmit()">Simpan</button>
-                </div>
+                <button class="cancel-btn" onclick="closeModal()">Batal</button>
+                <button class="submit-btn" onclick="savePostSubmit()">Simpan</button>
             </div>
         </div>
     </div>
 
-    <!-- JENDELA POPUP AMAN (PENGATURAN TOKEN/KUNCI ADMIN) -->
+    <!-- Modal Kunci (Settings) -->
     <div id="token-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-header">
@@ -104,24 +64,16 @@
                 <button class="close-modal-btn" onclick="closeTokenModal()">✕</button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.8rem; color: #a1a1aa; margin-bottom: 15px; line-height: 1.4;">
-                    Masukkan Personal Access Token GitHub Anda di bawah ini agar Anda bisa mengunggah dan mengedit postingan langsung dari browser ini. Token disimpan aman secara lokal di HP Anda.
-                </p>
                 <div class="form-group">
-                    <label for="admin-token-input">Token GitHub (ghp_...)</label>
-                    <input type="password" id="admin-token-input" placeholder="Masukkan token ghp_ Anda...">
+                    <label>Token GitHub (ghp_...)</label>
+                    <input type="password" id="admin-token-input" placeholder="Masukkan token Anda...">
                 </div>
-                <div id="token-modal-msg" style="font-size: 0.8rem; font-weight: bold; margin-top: 10px;"></div>
             </div>
             <div class="modal-footer">
-                <button class="cancel-btn" onclick="closeTokenModal()">Tutup</button>
                 <button class="submit-btn" onclick="saveAdminToken()">Simpan Kunci</button>
             </div>
         </div>
     </div>
-
-    <!-- Menghubungkan ke berkas javascript apps.js -->
     <script src="apps.js"></script>
 </body>
 </html>
-
