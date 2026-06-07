@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Hub - Dashboard Direktori</title>
+    <title>LinkSitePornstar - Dashboard Direktori</title>
     <style>
         /* RESET & VARIABEL DASAR */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -489,8 +489,8 @@
                 <div class="form-group">
                     <label>Kategori / Tag</label>
                     <select id="form-tag" onchange="toggleGenreInput()">
+                        <option value="PornStar">PornStar</option>
                         <option value="Chanel">Chanel</option>
-                        <option value="PS">PS</option>
                         <option value="Videos">Videos</option>
                     </select>
                 </div>
@@ -501,14 +501,14 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Thumbnail Gambar</label>
+                    <label>Thumbnail Gambar (Opsional)</label>
                     <div class="tab-header">
                         <button class="tab-link active" id="tab-btn-url" onclick="switchThumbInput('url')">Salin URL Gambar</button>
                         <button class="tab-link" id="tab-btn-file" onclick="switchThumbInput('file')">Unggah dari HP</button>
                     </div>
                     
                     <div id="thumb-url-container">
-                        <input type="url" id="form-thumbnail-url" placeholder="https://contoh-gambar.com/gambar.jpg">
+                        <input type="url" id="form-thumbnail-url" placeholder="Kosongkan jika tidak ada">
                     </div>
                     
                     <div id="thumb-file-container" style="display: none;">
@@ -798,10 +798,13 @@
                 // Format views counter
                 const viewsCount = item.views ? item.views.toLocaleString('id-ID') : "0";
 
+                // Jika thumbnail kosong, gunakan placeholder
+                const thumbnailSrc = item.thumbnail ? item.thumbnail : 'https://via.placeholder.com/400x250?text=Tanpa+Thumbnail';
+
                 card.innerHTML = `
                     <div class="card-link">
                         <div class="thumb-container">
-                            <img src="${item.thumbnail}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
+                            <img src="${thumbnailSrc}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Gambar+Rusak'">
                             <span class="views-badge badge-item-${item.id}">👁️ ${viewsCount} Views</span>
                         </div>
                         <div class="card-details">
@@ -996,7 +999,7 @@
             }
 
             if (!title) { showError('Judul postingan wajib diisi!'); return; }
-            if (!finalThumbnail) { showError('Harap masukkan URL gambar atau unggah gambar untuk thumbnail!'); return; }
+            // Validasi thumbnail dihapus, sehingga gambar tidak lagi wajib
             if (linksCollector.length === 0) { showError('Harap masukkan minimal 1 alamat URL tautan tujuan!'); return; }
             if (tag === 'Videos' && !genre) { showError('Harap isi Genre Utama untuk kategori Videos!'); return; }
 
